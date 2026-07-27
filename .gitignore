@@ -3,3 +3,6 @@ node_modules/
 .env
 .env.local
 data/angijral-db.json
+*.tsbuildinfo
+devserver.*.log
+startserver.*.log

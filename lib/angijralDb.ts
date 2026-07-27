@@ -1,5 +1,4 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
+import { neon } from "@neondatabase/serverless";
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "crypto";
 
 export type Role = "user" | "admin";
@@ -85,17 +84,7 @@ export interface DbCoupon {
   createdAt: string;
 }
 
-interface AngijralDb {
-  users: DbUser[];
-  bookings: DbBooking[];
-  testimonials: DbTestimonial[];
-  teachers: DbTeacher[];
-  services: DbService[];
-  coupons: DbCoupon[];
-}
-
-const dataDir = path.join(process.cwd(), "data");
-const dbPath = path.join(dataDir, "angijral-db.json");
+const sql = neon(process.env.DATABASE_URL!);
 const adminPassword = "Osohoo123456";
 
 const defaultTeacherPhotos = [
@@ -236,61 +225,142 @@ function toPublicUser(user: DbUser): PublicUser {
   };
 }
 
-function createSeedDb(): AngijralDb {
-  const adminHash = hashPassword(adminPassword);
+function rowToUser(row: Record<string, unknown>): DbUser {
   return {
-    users: [
-      {
-        id: "admin-osgoo",
-        name: "Osgoo",
-        phone: "Osgoo",
-        role: "admin",
-        passwordHash: adminHash.hash,
-        passwordSalt: adminHash.salt,
-        joinedAt: "2026-01-14",
-      },
-    ],
-    bookings: [],
-    testimonials: [],
-    teachers: seedTeachers,
-    services: seedServices,
-    coupons: [],
+    id: row.id as string,
+    name: row.name as string,
+    phone: row.phone as string,
+    email: (row.email as string) ?? undefined,
+    role: row.role as Role,
+    passwordHash: row.password_hash as string,
+    passwordSalt: row.password_salt as string,
+    googleSub: (row.google_sub as string) ?? undefined,
+    authProvider: (row.auth_provider as "password" | "google") ?? undefined,
+    joinedAt: row.joined_at as string,
   };
 }
 
-async function readDb(): Promise<AngijralDb> {
-  await mkdir(dataDir, { recursive: true });
+let schemaReady: Promise<void> | null = null;
 
-  try {
-    const raw = await readFile(dbPath, "utf8");
-    const parsed = JSON.parse(raw) as Partial<AngijralDb>;
-    if (!Array.isArray(parsed.users)) throw new Error("Invalid database shape");
-    return {
-      users: parsed.users,
-      bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
-      testimonials: Array.isArray(parsed.testimonials) ? parsed.testimonials : [],
-      teachers: Array.isArray(parsed.teachers)
-        ? parsed.teachers.map((teacher) => ({
-            ...teacher,
-            serviceIds: Array.isArray((teacher as DbTeacher).serviceIds) ? (teacher as DbTeacher).serviceIds : [],
-          }))
-        : seedTeachers,
-      services: Array.isArray(parsed.services) ? parsed.services : seedServices,
-      coupons: Array.isArray(parsed.coupons) ? parsed.coupons : [],
-    };
-  } catch {
-    const db = createSeedDb();
-    await writeDb(db);
-    return db;
+async function ensureSchema() {
+  if (!schemaReady) {
+    schemaReady = (async () => {
+      await sql`
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          phone TEXT NOT NULL,
+          email TEXT,
+          role TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          password_salt TEXT NOT NULL,
+          google_sub TEXT,
+          auth_provider TEXT,
+          joined_at TEXT NOT NULL
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS bookings (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          phone TEXT NOT NULL,
+          service TEXT NOT NULL,
+          specialist TEXT NOT NULL,
+          preferred_date TEXT NOT NULL,
+          time TEXT NOT NULL,
+          status TEXT NOT NULL,
+          note TEXT NOT NULL,
+          service_price INTEGER,
+          coupon_code TEXT,
+          discount_amount INTEGER,
+          total_amount INTEGER,
+          created_at TEXT NOT NULL
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS testimonials (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          message TEXT NOT NULL,
+          rating INTEGER NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS teachers (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          role TEXT NOT NULL,
+          years INTEGER NOT NULL,
+          bio TEXT NOT NULL,
+          photo TEXT,
+          service_ids JSONB NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS services (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          photo TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS coupons (
+          id TEXT PRIMARY KEY,
+          code TEXT NOT NULL,
+          discount_type TEXT NOT NULL,
+          value INTEGER NOT NULL,
+          expires_at TEXT,
+          active BOOLEAN NOT NULL DEFAULT true,
+          usage_limit INTEGER,
+          used_count INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL
+        )
+      `;
+
+      const [{ count: userCount }] = (await sql`SELECT COUNT(*)::int AS count FROM users`) as { count: number }[];
+      if (userCount === 0) {
+        const adminHash = hashPassword(adminPassword);
+        await sql`
+          INSERT INTO users (id, name, phone, role, password_hash, password_salt, joined_at)
+          VALUES ('admin-osgoo', 'Osgoo', 'Osgoo', 'admin', ${adminHash.hash}, ${adminHash.salt}, '2026-01-14')
+        `;
+      }
+
+      const [{ count: teacherCount }] = (await sql`SELECT COUNT(*)::int AS count FROM teachers`) as {
+        count: number;
+      }[];
+      if (teacherCount === 0) {
+        for (const teacher of seedTeachers) {
+          await sql`
+            INSERT INTO teachers (id, name, role, years, bio, photo, service_ids, created_at)
+            VALUES (${teacher.id}, ${teacher.name}, ${teacher.role}, ${teacher.years}, ${teacher.bio}, ${teacher.photo}, ${JSON.stringify(teacher.serviceIds)}, ${teacher.createdAt})
+          `;
+        }
+      }
+
+      const [{ count: serviceCount }] = (await sql`SELECT COUNT(*)::int AS count FROM services`) as {
+        count: number;
+      }[];
+      if (serviceCount === 0) {
+        for (const service of seedServices) {
+          await sql`
+            INSERT INTO services (id, title, description, photo, created_at)
+            VALUES (${service.id}, ${service.title}, ${service.description}, ${service.photo}, ${service.createdAt})
+          `;
+        }
+      }
+    })();
   }
-}
-
-async function writeDb(db: AngijralDb) {
-  await mkdir(dataDir, { recursive: true });
-  await writeFile(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
+  await schemaReady;
 }
 
 export async function createUser(input: { name: string; phone: string; password: string }) {
+  await ensureSchema();
+
   const name = input.name.trim();
   const phone = normalizePhone(input.phone);
   const password = input.password;
@@ -303,10 +373,8 @@ export async function createUser(input: { name: string; phone: string; password:
     return { ok: false as const, message: "Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой." };
   }
 
-  const db = await readDb();
-  const exists = db.users.some((user) => normalizePhone(user.phone).toLowerCase() === phone.toLowerCase());
-
-  if (exists) {
+  const existingRows = await sql`SELECT id FROM users WHERE lower(phone) = lower(${phone})`;
+  if (existingRows.length > 0) {
     return { ok: false as const, message: "Энэ утасны дугаараар бүртгэл үүссэн байна." };
   }
 
@@ -322,13 +390,17 @@ export async function createUser(input: { name: string; phone: string; password:
     joinedAt: new Date().toISOString().slice(0, 10),
   };
 
-  db.users.push(user);
-  await writeDb(db);
+  await sql`
+    INSERT INTO users (id, name, phone, role, password_hash, password_salt, auth_provider, joined_at)
+    VALUES (${user.id}, ${user.name}, ${user.phone}, ${user.role}, ${user.passwordHash}, ${user.passwordSalt}, ${user.authProvider}, ${user.joinedAt})
+  `;
 
   return { ok: true as const, user: toPublicUser(user) };
 }
 
 export async function loginGoogleUser(input: { googleSub: string; email: string; name: string }) {
+  await ensureSchema();
+
   const googleSub = input.googleSub.trim();
   const email = input.email.trim().toLowerCase();
   const name = input.name.trim() || email.split("@")[0] || "Google хэрэглэгч";
@@ -337,16 +409,19 @@ export async function loginGoogleUser(input: { googleSub: string; email: string;
     return { ok: false as const, message: "Google бүртгэлийн мэдээлэл дутуу байна." };
   }
 
-  const db = await readDb();
-  const user = db.users.find(
-    (item) => item.googleSub === googleSub || (item.email && item.email.toLowerCase() === email)
-  );
+  const rows = await sql`
+    SELECT * FROM users WHERE google_sub = ${googleSub} OR lower(email) = ${email} LIMIT 1
+  `;
 
-  if (user) {
+  if (rows.length > 0) {
+    const user = rowToUser(rows[0]);
     user.googleSub = user.googleSub ?? googleSub;
     user.email = user.email ?? email;
     user.authProvider = user.authProvider ?? "google";
-    await writeDb(db);
+    await sql`
+      UPDATE users SET google_sub = ${user.googleSub}, email = ${user.email}, auth_provider = ${user.authProvider}
+      WHERE id = ${user.id}
+    `;
     return { ok: true as const, user: toPublicUser(user) };
   }
 
@@ -364,18 +439,23 @@ export async function loginGoogleUser(input: { googleSub: string; email: string;
     joinedAt: new Date().toISOString().slice(0, 10),
   };
 
-  db.users.push(googleUser);
-  await writeDb(db);
+  await sql`
+    INSERT INTO users (id, name, phone, email, role, password_hash, password_salt, google_sub, auth_provider, joined_at)
+    VALUES (${googleUser.id}, ${googleUser.name}, ${googleUser.phone}, ${googleUser.email}, ${googleUser.role}, ${googleUser.passwordHash}, ${googleUser.passwordSalt}, ${googleUser.googleSub}, ${googleUser.authProvider}, ${googleUser.joinedAt})
+  `;
 
   return { ok: true as const, user: toPublicUser(googleUser) };
 }
 
 export async function loginUser(input: { phone: string; password: string; role: Role }) {
+  await ensureSchema();
+
   const phone = normalizePhone(input.phone);
-  const db = await readDb();
-  const user = db.users.find(
-    (item) => item.role === input.role && normalizePhone(item.phone).toLowerCase() === phone.toLowerCase()
-  );
+  const rows = await sql`
+    SELECT * FROM users WHERE role = ${input.role} AND lower(phone) = lower(${phone}) LIMIT 1
+  `;
+
+  const user = rows.length > 0 ? rowToUser(rows[0]) : null;
 
   if (!user || !verifyPassword(input.password, user.passwordHash, user.passwordSalt)) {
     return {
@@ -388,6 +468,8 @@ export async function loginUser(input: { phone: string; password: string; role: 
 }
 
 export async function resetUserPassword(input: { identifier: string; password: string }) {
+  await ensureSchema();
+
   const identifier = input.identifier.trim();
   const normalizedIdentifier = normalizePhone(identifier).toLowerCase();
   const password = input.password;
@@ -400,70 +482,96 @@ export async function resetUserPassword(input: { identifier: string; password: s
     return { ok: false as const, message: "Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой." };
   }
 
-  const db = await readDb();
-  const user = db.users.find((item) => {
-    if (item.role !== "user") return false;
+  const rows = await sql`
+    SELECT * FROM users
+    WHERE role = 'user' AND (lower(phone) = ${normalizedIdentifier} OR lower(email) = lower(${identifier}))
+    LIMIT 1
+  `;
 
-    const phoneMatches = normalizePhone(item.phone).toLowerCase() === normalizedIdentifier;
-    const emailMatches = item.email?.trim().toLowerCase() === identifier.toLowerCase();
-
-    return phoneMatches || emailMatches;
-  });
-
-  if (!user) {
+  if (rows.length === 0) {
     return { ok: false as const, message: "Ийм утас эсвэл имэйлтэй хэрэглэгч олдсонгүй." };
   }
 
+  const user = rowToUser(rows[0]);
   const passwordData = hashPassword(password);
   user.passwordHash = passwordData.hash;
   user.passwordSalt = passwordData.salt;
   user.authProvider = user.authProvider ?? "password";
 
-  await writeDb(db);
+  await sql`
+    UPDATE users SET password_hash = ${user.passwordHash}, password_salt = ${user.passwordSalt}, auth_provider = ${user.authProvider}
+    WHERE id = ${user.id}
+  `;
 
   return { ok: true as const, user: toPublicUser(user) };
 }
 
 export async function listUsers() {
-  const db = await readDb();
-  return db.users.map(toPublicUser);
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM users ORDER BY joined_at DESC`;
+  return rows.map((row) => toPublicUser(rowToUser(row as Record<string, unknown>)));
 }
 
 export async function updateUserRole(id: string, role: Role) {
-  const db = await readDb();
-  const user = db.users.find((item) => item.id === id);
+  await ensureSchema();
 
-  if (!user) {
+  const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Хэрэглэгч олдсонгүй." };
   }
 
-  const adminCount = db.users.filter((item) => item.role === "admin").length;
+  const user = rowToUser(rows[0]);
+  const [{ count: adminCount }] = (await sql`SELECT COUNT(*)::int AS count FROM users WHERE role = 'admin'`) as {
+    count: number;
+  }[];
+
   if (user.role === "admin" && role === "user" && adminCount <= 1) {
     return { ok: false as const, message: "Сүүлийн админ эрхийг хасах боломжгүй." };
   }
 
+  await sql`UPDATE users SET role = ${role} WHERE id = ${id}`;
   user.role = role;
-  await writeDb(db);
   return { ok: true as const, user: toPublicUser(user) };
 }
 
 export async function deleteUser(id: string) {
-  const db = await readDb();
-  const user = db.users.find((item) => item.id === id);
+  await ensureSchema();
 
-  if (!user) {
+  const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Хэрэглэгч олдсонгүй." };
   }
 
-  const adminCount = db.users.filter((item) => item.role === "admin").length;
+  const user = rowToUser(rows[0]);
+  const [{ count: adminCount }] = (await sql`SELECT COUNT(*)::int AS count FROM users WHERE role = 'admin'`) as {
+    count: number;
+  }[];
+
   if (user.role === "admin" && adminCount <= 1) {
     return { ok: false as const, message: "Сүүлийн админ хэрэглэгчийг устгах боломжгүй." };
   }
 
-  const nextUsers = db.users.filter((user) => user.id !== id);
-
-  await writeDb({ ...db, users: nextUsers });
+  await sql`DELETE FROM users WHERE id = ${id}`;
   return { ok: true as const };
+}
+
+function rowToBooking(row: Record<string, unknown>): DbBooking {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    phone: row.phone as string,
+    service: row.service as string,
+    specialist: row.specialist as string,
+    preferredDate: row.preferred_date as string,
+    time: row.time as string,
+    status: row.status as BookingStatus,
+    note: row.note as string,
+    servicePrice: row.service_price === null ? undefined : Number(row.service_price),
+    couponCode: (row.coupon_code as string) ?? undefined,
+    discountAmount: row.discount_amount === null ? undefined : Number(row.discount_amount),
+    totalAmount: row.total_amount === null ? undefined : Number(row.total_amount),
+    createdAt: row.created_at as string,
+  };
 }
 
 export async function createBooking(input: {
@@ -477,41 +585,45 @@ export async function createBooking(input: {
   servicePrice?: number;
   couponCode?: string;
 }) {
+  await ensureSchema();
+
   const name = input.name?.trim() ?? "";
   const phone = input.phone ? normalizePhone(input.phone) : "";
   const service = input.service?.trim() ?? "";
   const servicePrice = sanitizeMoney(input.servicePrice);
   const couponCode = normalizeCouponCode(input.couponCode ?? "");
+  const specialist = input.specialist?.trim() ?? "";
+  const time = input.time ?? "";
 
   if (!name || !phone || !service || !input.preferredDate) {
     return { ok: false as const, message: "Шаардлагатай мэдээлэл дутуу байна." };
   }
 
-  const db = await readDb();
-
-  const alreadyBooked = db.bookings.some(
-    (b) =>
-      b.specialist === (input.specialist ?? "") &&
-      b.preferredDate === input.preferredDate &&
-      b.time === (input.time ?? "") &&
-      b.status !== "цуцлагдсан"
-  );
-  if (alreadyBooked && input.specialist && input.time) {
-    return { ok: false as const, message: "Уучлаарай, энэ цаг аль хэдийн захиалагдсан байна." };
+  if (specialist && time) {
+    const conflicts = await sql`
+      SELECT id FROM bookings
+      WHERE specialist = ${specialist} AND preferred_date = ${input.preferredDate} AND time = ${time}
+        AND status <> 'цуцлагдсан'
+      LIMIT 1
+    `;
+    if (conflicts.length > 0) {
+      return { ok: false as const, message: "Уучлаарай, энэ цаг аль хэдийн захиалагдсан байна." };
+    }
   }
 
   let discountAmount = 0;
   let totalAmount = servicePrice;
 
   if (couponCode) {
-    const couponResult = validateCouponFromDb(db, couponCode, servicePrice);
+    const couponRows = await sql`SELECT * FROM coupons WHERE code = ${couponCode} LIMIT 1`;
+    const couponResult = validateCouponRows(couponRows as Record<string, unknown>[], servicePrice);
     if (!couponResult.ok) {
       return { ok: false as const, message: couponResult.message };
     }
 
     discountAmount = couponResult.discountAmount;
     totalAmount = couponResult.totalAmount;
-    couponResult.coupon.usedCount += 1;
+    await sql`UPDATE coupons SET used_count = used_count + 1 WHERE id = ${couponResult.coupon.id}`;
   }
 
   const booking: DbBooking = {
@@ -519,9 +631,9 @@ export async function createBooking(input: {
     name,
     phone,
     service,
-    specialist: input.specialist?.trim() ?? "",
+    specialist,
     preferredDate: input.preferredDate,
-    time: input.time ?? "",
+    time,
     note: input.note?.trim() ?? "",
     status: "хүлээгдэж буй",
     servicePrice,
@@ -531,39 +643,43 @@ export async function createBooking(input: {
     createdAt: new Date().toISOString().slice(0, 10),
   };
 
-  db.bookings.push(booking);
-  await writeDb(db);
+  await sql`
+    INSERT INTO bookings (id, name, phone, service, specialist, preferred_date, time, status, note, service_price, coupon_code, discount_amount, total_amount, created_at)
+    VALUES (${booking.id}, ${booking.name}, ${booking.phone}, ${booking.service}, ${booking.specialist}, ${booking.preferredDate}, ${booking.time}, ${booking.status}, ${booking.note}, ${booking.servicePrice ?? null}, ${booking.couponCode ?? null}, ${booking.discountAmount ?? null}, ${booking.totalAmount ?? null}, ${booking.createdAt})
+  `;
 
   return { ok: true as const, booking };
 }
 
 export async function listBookings() {
-  const db = await readDb();
-  return [...db.bookings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM bookings ORDER BY created_at DESC`;
+  return rows.map((row) => rowToBooking(row as Record<string, unknown>));
 }
 
 export async function updateBookingStatus(id: string, status: BookingStatus) {
-  const db = await readDb();
-  const booking = db.bookings.find((b) => b.id === id);
+  await ensureSchema();
 
-  if (!booking) {
+  const rows = await sql`SELECT * FROM bookings WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Захиалга олдсонгүй." };
   }
 
+  await sql`UPDATE bookings SET status = ${status} WHERE id = ${id}`;
+  const booking = rowToBooking(rows[0]);
   booking.status = status;
-  await writeDb(db);
   return { ok: true as const, booking };
 }
 
 export async function deleteBooking(id: string) {
-  const db = await readDb();
-  const exists = db.bookings.some((b) => b.id === id);
+  await ensureSchema();
 
-  if (!exists) {
+  const rows = await sql`SELECT id FROM bookings WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Захиалга олдсонгүй." };
   }
 
-  await writeDb({ ...db, bookings: db.bookings.filter((b) => b.id !== id) });
+  await sql`DELETE FROM bookings WHERE id = ${id}`;
   return { ok: true as const };
 }
 
@@ -577,6 +693,20 @@ function createInitials(name: string) {
   return words.map((word) => word[0]?.toUpperCase()).join("") || "Х";
 }
 
+function rowToTeacher(row: Record<string, unknown>): DbTeacher {
+  const serviceIds = row.service_ids;
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    role: row.role as string,
+    years: Number(row.years),
+    bio: row.bio as string,
+    photo: (row.photo as string) ?? undefined,
+    serviceIds: Array.isArray(serviceIds) ? (serviceIds as string[]) : [],
+    createdAt: row.created_at as string,
+  };
+}
+
 function toPublicTeacher(teacher: DbTeacher, index = 0) {
   return {
     ...teacher,
@@ -587,13 +717,9 @@ function toPublicTeacher(teacher: DbTeacher, index = 0) {
 }
 
 export async function listTeachers() {
-  const db = await readDb();
-  return [...db.teachers]
-    .sort((a, b) => {
-      if (a.createdAt === b.createdAt) return 0;
-      return a.createdAt < b.createdAt ? 1 : -1;
-    })
-    .map(toPublicTeacher);
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM teachers ORDER BY created_at DESC`;
+  return rows.map((row, index) => toPublicTeacher(rowToTeacher(row as Record<string, unknown>), index));
 }
 
 export async function createTeacher(input: {
@@ -604,6 +730,8 @@ export async function createTeacher(input: {
   photo?: string;
   serviceIds?: string[];
 }) {
+  await ensureSchema();
+
   const name = input.name?.trim() ?? "";
   const role = input.role?.trim() ?? "";
   const years = Number(input.years);
@@ -619,7 +747,6 @@ export async function createTeacher(input: {
     return { ok: false as const, message: "Туршлага 0-60 жилийн хооронд байх ёстой." };
   }
 
-  const db = await readDb();
   const teacher: DbTeacher = {
     id: randomUUID(),
     name,
@@ -631,8 +758,10 @@ export async function createTeacher(input: {
     createdAt: new Date().toISOString().slice(0, 10),
   };
 
-  db.teachers.push(teacher);
-  await writeDb(db);
+  await sql`
+    INSERT INTO teachers (id, name, role, years, bio, photo, service_ids, created_at)
+    VALUES (${teacher.id}, ${teacher.name}, ${teacher.role}, ${teacher.years}, ${teacher.bio}, ${teacher.photo}, ${JSON.stringify(teacher.serviceIds)}, ${teacher.createdAt})
+  `;
 
   return { ok: true as const, teacher: toPublicTeacher(teacher) };
 }
@@ -641,6 +770,8 @@ export async function updateTeacher(
   id: string,
   input: { name?: string; role?: string; years?: number; bio?: string; photo?: string; serviceIds?: string[] }
 ) {
+  await ensureSchema();
+
   const name = input.name?.trim() ?? "";
   const role = input.role?.trim() ?? "";
   const years = Number(input.years);
@@ -656,34 +787,40 @@ export async function updateTeacher(
     return { ok: false as const, message: "Туршлага 0-60 жилийн хооронд байх ёстой." };
   }
 
-  const db = await readDb();
-  const teacher = db.teachers.find((item) => item.id === id);
-
-  if (!teacher) {
+  const rows = await sql`SELECT id FROM teachers WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Бариач олдсонгүй." };
   }
 
-  teacher.name = name;
-  teacher.role = role;
-  teacher.years = years;
-  teacher.bio = bio;
-  teacher.photo = photo;
-  teacher.serviceIds = serviceIds;
-  await writeDb(db);
+  await sql`
+    UPDATE teachers SET name = ${name}, role = ${role}, years = ${years}, bio = ${bio}, photo = ${photo}, service_ids = ${JSON.stringify(serviceIds)}
+    WHERE id = ${id}
+  `;
 
+  const teacher: DbTeacher = { id, name, role, years, bio, photo, serviceIds, createdAt: "" };
   return { ok: true as const, teacher: toPublicTeacher(teacher) };
 }
 
 export async function deleteTeacher(id: string) {
-  const db = await readDb();
-  const exists = db.teachers.some((teacher) => teacher.id === id);
+  await ensureSchema();
 
-  if (!exists) {
+  const rows = await sql`SELECT id FROM teachers WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Бариач олдсонгүй." };
   }
 
-  await writeDb({ ...db, teachers: db.teachers.filter((teacher) => teacher.id !== id) });
+  await sql`DELETE FROM teachers WHERE id = ${id}`;
   return { ok: true as const };
+}
+
+function rowToService(row: Record<string, unknown>): DbService {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    description: row.description as string,
+    photo: row.photo as string,
+    createdAt: row.created_at as string,
+  };
 }
 
 function toPublicService(service: DbService) {
@@ -696,11 +833,14 @@ function toPublicService(service: DbService) {
 }
 
 export async function listServices() {
-  const db = await readDb();
-  return db.services.map(toPublicService);
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM services ORDER BY created_at DESC`;
+  return rows.map((row) => toPublicService(rowToService(row as Record<string, unknown>)));
 }
 
 export async function createService(input: { title?: string; description?: string; photo?: string }) {
+  await ensureSchema();
+
   const title = input.title?.trim() ?? "";
   const description = input.description?.trim() ?? "";
   const photo = input.photo?.trim() || defaultServicePhoto;
@@ -709,7 +849,6 @@ export async function createService(input: { title?: string; description?: strin
     return { ok: false as const, message: "Үйлчилгээний гарчгийг бөглөнө үү." };
   }
 
-  const db = await readDb();
   const service: DbService = {
     id: randomUUID(),
     title,
@@ -718,13 +857,17 @@ export async function createService(input: { title?: string; description?: strin
     createdAt: new Date().toISOString().slice(0, 10),
   };
 
-  db.services.unshift(service);
-  await writeDb(db);
+  await sql`
+    INSERT INTO services (id, title, description, photo, created_at)
+    VALUES (${service.id}, ${service.title}, ${service.description}, ${service.photo}, ${service.createdAt})
+  `;
 
   return { ok: true as const, service: toPublicService(service) };
 }
 
 export async function updateService(id: string, input: { title?: string; description?: string; photo?: string }) {
+  await ensureSchema();
+
   const title = input.title?.trim() ?? "";
   const description = input.description?.trim() ?? "";
   const photo = input.photo?.trim() || defaultServicePhoto;
@@ -733,30 +876,26 @@ export async function updateService(id: string, input: { title?: string; descrip
     return { ok: false as const, message: "Үйлчилгээний гарчгийг бөглөнө үү." };
   }
 
-  const db = await readDb();
-  const service = db.services.find((item) => item.id === id);
-
-  if (!service) {
+  const rows = await sql`SELECT id FROM services WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Үйлчилгээ олдсонгүй." };
   }
 
-  service.title = title;
-  service.description = description;
-  service.photo = photo;
-  await writeDb(db);
+  await sql`UPDATE services SET title = ${title}, description = ${description}, photo = ${photo} WHERE id = ${id}`;
 
+  const service: DbService = { id, title, description, photo, createdAt: "" };
   return { ok: true as const, service: toPublicService(service) };
 }
 
 export async function deleteService(id: string) {
-  const db = await readDb();
-  const exists = db.services.some((service) => service.id === id);
+  await ensureSchema();
 
-  if (!exists) {
+  const rows = await sql`SELECT id FROM services WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Үйлчилгээ олдсонгүй." };
   }
 
-  await writeDb({ ...db, services: db.services.filter((service) => service.id !== id) });
+  await sql`DELETE FROM services WHERE id = ${id}`;
   return { ok: true as const };
 }
 
@@ -784,13 +923,26 @@ function calculateDiscount(coupon: Pick<DbCoupon, "discountType" | "value">, sub
   return Math.min(subtotal, Math.round(coupon.value));
 }
 
-function validateCouponFromDb(db: AngijralDb, code: string, subtotal: number) {
-  const normalizedCode = normalizeCouponCode(code);
-  const coupon = db.coupons.find((item) => item.code === normalizedCode);
+function rowToCoupon(row: Record<string, unknown>): DbCoupon {
+  return {
+    id: row.id as string,
+    code: row.code as string,
+    discountType: row.discount_type as CouponDiscountType,
+    value: Number(row.value),
+    expiresAt: (row.expires_at as string) ?? undefined,
+    active: Boolean(row.active),
+    usageLimit: row.usage_limit === null ? undefined : Number(row.usage_limit),
+    usedCount: Number(row.used_count),
+    createdAt: row.created_at as string,
+  };
+}
 
-  if (!coupon) {
+function validateCouponRows(rows: Record<string, unknown>[], subtotal: number) {
+  if (rows.length === 0) {
     return { ok: false as const, message: "Купон код олдсонгүй." };
   }
+
+  const coupon = rowToCoupon(rows[0]);
 
   if (!coupon.active) {
     return { ok: false as const, message: "Энэ купон идэвхгүй байна." };
@@ -829,11 +981,14 @@ function toPublicCoupon(coupon: DbCoupon) {
 }
 
 export async function listCoupons() {
-  const db = await readDb();
-  return [...db.coupons].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).map(toPublicCoupon);
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM coupons ORDER BY created_at DESC`;
+  return rows.map((row) => toPublicCoupon(rowToCoupon(row as Record<string, unknown>)));
 }
 
 export async function validateCoupon(input: { code?: string; subtotal?: number }) {
+  await ensureSchema();
+
   const code = normalizeCouponCode(input.code ?? "");
   const subtotal = sanitizeMoney(input.subtotal);
 
@@ -841,8 +996,8 @@ export async function validateCoupon(input: { code?: string; subtotal?: number }
     return { ok: false as const, message: "Купон кодоо оруулна уу." };
   }
 
-  const db = await readDb();
-  const result = validateCouponFromDb(db, code, subtotal);
+  const rows = await sql`SELECT * FROM coupons WHERE code = ${code} LIMIT 1`;
+  const result = validateCouponRows(rows as Record<string, unknown>[], subtotal);
   if (!result.ok) {
     return result;
   }
@@ -863,6 +1018,8 @@ export async function createCoupon(input: {
   active?: boolean;
   usageLimit?: number;
 }) {
+  await ensureSchema();
+
   const code = normalizeCouponCode(input.code ?? "");
   const discountType = input.discountType === "amount" ? "amount" : "percent";
   const value = sanitizeCouponValue(input.value);
@@ -877,8 +1034,8 @@ export async function createCoupon(input: {
     return { ok: false as const, message: "Хувийн хөнгөлөлт 100-аас их байж болохгүй." };
   }
 
-  const db = await readDb();
-  if (db.coupons.some((coupon) => coupon.code === code)) {
+  const existing = await sql`SELECT id FROM coupons WHERE code = ${code} LIMIT 1`;
+  if (existing.length > 0) {
     return { ok: false as const, message: "Энэ купон код аль хэдийн байна." };
   }
 
@@ -894,8 +1051,10 @@ export async function createCoupon(input: {
     createdAt: new Date().toISOString().slice(0, 10),
   };
 
-  db.coupons.unshift(coupon);
-  await writeDb(db);
+  await sql`
+    INSERT INTO coupons (id, code, discount_type, value, expires_at, active, usage_limit, used_count, created_at)
+    VALUES (${coupon.id}, ${coupon.code}, ${coupon.discountType}, ${coupon.value}, ${coupon.expiresAt ?? null}, ${coupon.active}, ${coupon.usageLimit ?? null}, ${coupon.usedCount}, ${coupon.createdAt})
+  `;
 
   return { ok: true as const, coupon: toPublicCoupon(coupon) };
 }
@@ -911,6 +1070,8 @@ export async function updateCoupon(
     usageLimit?: number;
   }
 ) {
+  await ensureSchema();
+
   const code = normalizeCouponCode(input.code ?? "");
   const discountType = input.discountType === "amount" ? "amount" : "percent";
   const value = sanitizeCouponValue(input.value);
@@ -925,52 +1086,59 @@ export async function updateCoupon(
     return { ok: false as const, message: "Хувийн хөнгөлөлт 100-аас их байж болохгүй." };
   }
 
-  const db = await readDb();
-  const coupon = db.coupons.find((item) => item.id === id);
-
-  if (!coupon) {
+  const rows = await sql`SELECT id FROM coupons WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Купон олдсонгүй." };
   }
 
-  if (db.coupons.some((item) => item.id !== id && item.code === code)) {
+  const duplicate = await sql`SELECT id FROM coupons WHERE id <> ${id} AND code = ${code} LIMIT 1`;
+  if (duplicate.length > 0) {
     return { ok: false as const, message: "Энэ купон код аль хэдийн байна." };
   }
 
-  coupon.code = code;
-  coupon.discountType = discountType;
-  coupon.value = value;
-  coupon.expiresAt = expiresAt;
-  coupon.active = input.active ?? true;
-  coupon.usageLimit = usageLimit;
+  await sql`
+    UPDATE coupons SET code = ${code}, discount_type = ${discountType}, value = ${value}, expires_at = ${expiresAt ?? null}, active = ${input.active ?? true}, usage_limit = ${usageLimit ?? null}
+    WHERE id = ${id}
+  `;
 
-  await writeDb(db);
-
-  return { ok: true as const, coupon: toPublicCoupon(coupon) };
+  const updatedRows = await sql`SELECT * FROM coupons WHERE id = ${id} LIMIT 1`;
+  return { ok: true as const, coupon: toPublicCoupon(rowToCoupon(updatedRows[0] as Record<string, unknown>)) };
 }
 
 export async function deleteCoupon(id: string) {
-  const db = await readDb();
-  const exists = db.coupons.some((coupon) => coupon.id === id);
+  await ensureSchema();
 
-  if (!exists) {
+  const rows = await sql`SELECT id FROM coupons WHERE id = ${id} LIMIT 1`;
+  if (rows.length === 0) {
     return { ok: false as const, message: "Купон олдсонгүй." };
   }
 
-  await writeDb({ ...db, coupons: db.coupons.filter((coupon) => coupon.id !== id) });
+  await sql`DELETE FROM coupons WHERE id = ${id}`;
   return { ok: true as const };
 }
 
+function rowToTestimonial(row: Record<string, unknown>): DbTestimonial {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    message: row.message as string,
+    rating: Number(row.rating),
+    createdAt: row.created_at as string,
+  };
+}
+
 export async function listTestimonials() {
-  const db = await readDb();
-  return [...db.testimonials]
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-    .map((testimonial) => ({
-      ...testimonial,
-      initials: createInitials(testimonial.name),
-    }));
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM testimonials ORDER BY created_at DESC`;
+  return rows.map((row) => {
+    const testimonial = rowToTestimonial(row as Record<string, unknown>);
+    return { ...testimonial, initials: createInitials(testimonial.name) };
+  });
 }
 
 export async function createTestimonial(input: { name?: string; message?: string; rating?: number }) {
+  await ensureSchema();
+
   const name = input.name?.trim() ?? "";
   const message = input.message?.trim() ?? "";
   const rating = Number(input.rating);
@@ -995,7 +1163,6 @@ export async function createTestimonial(input: { name?: string; message?: string
     return { ok: false as const, message: "Үнэлгээ 1-5 хооронд байх ёстой." };
   }
 
-  const db = await readDb();
   const testimonial: DbTestimonial = {
     id: randomUUID(),
     name,
@@ -1004,14 +1171,13 @@ export async function createTestimonial(input: { name?: string; message?: string
     createdAt: new Date().toISOString(),
   };
 
-  db.testimonials.push(testimonial);
-  await writeDb(db);
+  await sql`
+    INSERT INTO testimonials (id, name, message, rating, created_at)
+    VALUES (${testimonial.id}, ${testimonial.name}, ${testimonial.message}, ${testimonial.rating}, ${testimonial.createdAt})
+  `;
 
   return {
     ok: true as const,
-    testimonial: {
-      ...testimonial,
-      initials: createInitials(testimonial.name),
-    },
+    testimonial: { ...testimonial, initials: createInitials(testimonial.name) },
   };
 }
