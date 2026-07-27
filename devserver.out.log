@@ -1,0 +1,10 @@
+
+> angijral-landing@1.0.0 dev
+> next dev -p 3002
+
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://192.168.10.197:3002
+- Environments: .env
+✓ Ready in 437ms
+[?25h

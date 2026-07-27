@@ -1,0 +1,120 @@
+{
+  "users": [
+    {
+      "id": "admin-osgoo",
+      "name": "Osgoo",
+      "phone": "Osgoo",
+      "role": "admin",
+      "passwordHash": "c2053993f682a72079699a9b80f88deb7d2498a6157b0508589f299ce31056a57e5385a4b94398adf69932c720ed81b0c1c79f0de5dd00661d207d494256199c",
+      "passwordSalt": "524e48339226d4ea47678c008bb8ec32",
+      "joinedAt": "2026-01-14"
+    }
+  ],
+  "bookings": [],
+  "testimonials": [],
+  "teachers": [
+    {
+      "id": "teacher-bat-erdene",
+      "name": "Б.Бат-Эрдэнэ",
+      "role": "Ахлах бариач",
+      "years": 15,
+      "bio": "Клиникийн болон эмчилгээний салбарт 15 гаруй жил ажилласан туршлагатай ахлах бариач. Анхан шатны болон нарийн мэргэжлийн бариа заслын үйлчилгээг үзүүлнэ.",
+      "photo": "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=700",
+      "serviceIds": [
+        "s1"
+      ],
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "teacher-enkhtuyaa",
+      "name": "Ц.Энхтуяа",
+      "role": "Бариач",
+      "years": 10,
+      "bio": "Relax болон Cupping массажийн чиглэлээр мэргэшсэн, үйлчлүүлэгч бүрт хамгийн тохиромжтой аргыг сонгож үйлчилдэг.",
+      "photo": "https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=700",
+      "serviceIds": [
+        "s1"
+      ],
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "teacher-orgil",
+      "name": "Г.Оргил",
+      "role": "Бариач",
+      "years": 8,
+      "bio": "Спорт бариа болон гуаша заслын чиглэлээр ажилладаг бөгөөд тамирчид болон идэвхтэй амьдралын хэв маягтай үйлчлүүлэгчдэд эмчилгээ хийдэг.",
+      "photo": "https://images.pexels.com/photos/6627534/pexels-photo-6627534.jpeg?auto=compress&cs=tinysrgb&w=700",
+      "serviceIds": [
+        "s1"
+      ],
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "teacher-dolgor",
+      "name": "Д.Долгор",
+      "role": "Хоол зүйч",
+      "years": 5,
+      "bio": "Хоол боловсруулах эрхтэн системийн өвчин, харшил, жингийн илүүдэл зэрэгт хоол зүйн зөвлөгөө өгч, ганцаарчилсан дэглэм боловсруулдаг.",
+      "photo": "https://images.pexels.com/photos/5327656/pexels-photo-5327656.jpeg?auto=compress&cs=tinysrgb&w=700",
+      "serviceIds": [
+        "s3"
+      ],
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "teacher-saruul",
+      "name": "С.Саруул",
+      "role": "Сэтгэл зүйч",
+      "years": 7,
+      "bio": "Стресс, сэтгэл түгшилт, айдас, гэр бүлийн харилцааны асуудлаар зөвлөгөө өгч, сэтгэл заслын үйлчилгээ үзүүлдэг.",
+      "photo": "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=700",
+      "serviceIds": [
+        "s4"
+      ],
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "teacher-ariunaa",
+      "name": "А.Ариунаа",
+      "role": "Бясалгалч",
+      "years": 9,
+      "bio": "Иога, бясалгалын багш. Олон улсын 'Yoga Alliance' байгууллагын RYT-500 зэрэгтэй.",
+      "photo": "https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=700",
+      "serviceIds": [
+        "s2"
+      ],
+      "createdAt": "2026-01-14"
+    }
+  ],
+  "services": [
+    {
+      "id": "s1",
+      "title": "Оффис бариа засал",
+      "description": "Суудал дээр нь хийх хүзүү, толгой, мөр гарын бариа",
+      "photo": "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900",
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "s2",
+      "title": "Байгууллагын бясалгал",
+      "description": "Стресс тайлж, бүтээмж нэмэх сонирхолтой хөтөлбөрт бүлгийн бясалгал",
+      "photo": "https://images.pexels.com/photos/3822622/pexels-photo-3822622.jpeg?auto=compress&cs=tinysrgb&w=900",
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "s3",
+      "title": "Хоол зүйн сургалт",
+      "description": "Хоол зүйн бүлгийн сургалт болон ганцаарчилсан зөвлөгөө, дэглэм",
+      "photo": "https://static.vecteezy.com/system/resources/previews/026/718/570/non_2x/closeup-of-vegetables-fruits-and-meat-on-wooden-table-over-green-natural-background-generative-ai-free-photo.jpg",
+      "createdAt": "2026-01-14"
+    },
+    {
+      "id": "s4",
+      "title": "Сэтгэл зүйн сургалт",
+      "description": "Мэргэжлийн сэтгэл зүйчийн бүлгийн сургалт, зөвлөгөө",
+      "photo": "https://images.pexels.com/photos/7176026/pexels-photo-7176026.jpeg?auto=compress&cs=tinysrgb&w=900",
+      "createdAt": "2026-01-14"
+    }
+  ],
+  "coupons": []
+}
