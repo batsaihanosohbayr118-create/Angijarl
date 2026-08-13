@@ -386,12 +386,64 @@ function CountUpStat({ value }: { value: string }) {
   return <strong ref={ref}>{display}</strong>;
 }
 
+function attachAutoCarousel(track: HTMLDivElement, cardSelector: string, maxWidth: number) {
+  const mobileQuery = window.matchMedia(`(max-width: ${maxWidth}px)`);
+  let timer: ReturnType<typeof setInterval> | null = null;
+  let resumeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const advance = () => {
+    const card = track.querySelector(cardSelector);
+    if (!card) return;
+    const step = card.getBoundingClientRect().width + 16;
+    const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + step, behavior: "smooth" });
+  };
+
+  const startAutoplay = () => {
+    if (timer || !mobileQuery.matches) return;
+    timer = setInterval(advance, 3200);
+  };
+
+  const stopAutoplay = () => {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
+
+  const pauseThenResume = () => {
+    stopAutoplay();
+    if (resumeTimeout) clearTimeout(resumeTimeout);
+    resumeTimeout = setTimeout(startAutoplay, 3500);
+  };
+
+  const handleMediaChange = () => {
+    if (mobileQuery.matches) startAutoplay();
+    else stopAutoplay();
+  };
+
+  startAutoplay();
+  track.addEventListener("pointerdown", pauseThenResume);
+  track.addEventListener("touchstart", pauseThenResume, { passive: true });
+  mobileQuery.addEventListener("change", handleMediaChange);
+
+  return () => {
+    stopAutoplay();
+    if (resumeTimeout) clearTimeout(resumeTimeout);
+    track.removeEventListener("pointerdown", pauseThenResume);
+    track.removeEventListener("touchstart", pauseThenResume);
+    mobileQuery.removeEventListener("change", handleMediaChange);
+  };
+}
+
 export default function Home() {
   const router = useRouter();
   const [teachers, setTeachers] = useState<Teacher[]>(defaultTeachers);
   const [teacherIndex, setTeacherIndex] = useState(0);
   const activeTeacher = teachers[teacherIndex] ?? defaultTeachers[0];
   const [offeredServices, setOfferedServices] = useState<ServiceItem[]>(defaultOfferedServices);
+  const offeredServicesTrackRef = useRef<HTMLDivElement>(null);
+  const testimonialGridRef = useRef<HTMLDivElement>(null);
 
   const [servicesOpen, setServicesOpen] = useState(false);
   const servicesRef = useRef<HTMLDivElement>(null);
@@ -399,6 +451,8 @@ export default function Home() {
   const session = useSyncExternalStore(subscribeToSession, getSessionSnapshot, () => null);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const [userTestimonials, setUserTestimonials] = useState<Testimonial[]>([]);
 
   useEffect(() => {
@@ -447,6 +501,18 @@ export default function Home() {
 
     void loadServices();
   }, []);
+
+  useEffect(() => {
+    const track = offeredServicesTrackRef.current;
+    if (!track) return;
+    return attachAutoCarousel(track, "article", 560);
+  }, [offeredServices]);
+
+  useEffect(() => {
+    const track = testimonialGridRef.current;
+    if (!track) return;
+    return attachAutoCarousel(track, ".testimonial-card", 720);
+  }, [userTestimonials]);
 
   const handleLogout = () => {
     window.localStorage.removeItem("angijral_session");
@@ -525,6 +591,19 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [profileOpen]);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
+
   const showPrevTeacher = () => {
     setTeacherIndex((current) => (current === 0 ? teachers.length - 1 : current - 1));
   };
@@ -535,12 +614,25 @@ export default function Home() {
 
   return (
     <main>
-      <header className="site-header">
+      <header className="site-header" ref={headerRef}>
         <Link className="brand" href="/">
           <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
         </Link>
 
-        <nav aria-label="Үндсэн цэс">
+        <button
+          type="button"
+          className={`nav-toggle${mobileMenuOpen ? " open" : ""}`}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="primary-navigation"
+          aria-label={mobileMenuOpen ? "Цэс хаах" : "Цэс нээх"}
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <nav id="primary-navigation" aria-label="Үндсэн цэс" className={mobileMenuOpen ? "nav-open" : ""}>
           {navItems.map((item, index) =>
             item === "Үйлчилгээ" ? (
               <div className="nav-dropdown" key={item} ref={servicesRef}>
@@ -562,7 +654,15 @@ export default function Home() {
                 {servicesOpen && (
                   <div className="nav-dropdown-menu" role="menu">
                     {services.map(([label, href]) => (
-                      <a href={href} key={label} role="menuitem" onClick={() => setServicesOpen(false)}>
+                      <a
+                        href={href}
+                        key={label}
+                        role="menuitem"
+                        onClick={() => {
+                          setServicesOpen(false);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
                         {label}
                       </a>
                     ))}
@@ -570,7 +670,12 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <a key={item} className={index === 0 ? "active" : ""} href={navHref(item, index)}>
+              <a
+                key={item}
+                className={index === 0 ? "active" : ""}
+                href={navHref(item, index)}
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 {item}
               </a>
             )
@@ -676,7 +781,7 @@ export default function Home() {
           <span />
         </div>
 
-        <div className="offered-services-grid">
+        <div className="offered-services-grid" ref={offeredServicesTrackRef}>
           {offeredServices.map((service) => (
             <article className="offered-service-card" key={service.id}>
               <div
@@ -783,7 +888,7 @@ export default function Home() {
             }
 
             return (
-              <div className="testimonial-grid">
+              <div className="testimonial-grid" ref={testimonialGridRef}>
                 {allTestimonials.map((testimonial) => renderCard(testimonial, testimonial.id))}
               </div>
             );

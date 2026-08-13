@@ -230,6 +230,8 @@ export default function BookingPage() {
   const session = useSyncExternalStore(subscribeToSession, getSessionSnapshot, () => null);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   const handleLogout = () => {
     window.localStorage.removeItem("angijral_session");
@@ -259,6 +261,17 @@ export default function BookingPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [profileOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
 
   const [step, setStep] = useState(1);
   const [service, setService] = useState<ServiceT | null>(null);
@@ -494,12 +507,25 @@ export default function BookingPage() {
 
   return (
     <div className={styles.page}>
-      <header className="site-header">
+      <header className="site-header" ref={headerRef}>
         <Link className="brand" href="/">
           <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
         </Link>
 
-        <nav aria-label="Үндсэн цэс">
+        <button
+          type="button"
+          className={`nav-toggle${mobileMenuOpen ? " open" : ""}`}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="primary-navigation"
+          aria-label={mobileMenuOpen ? "Цэс хаах" : "Цэс нээх"}
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <nav id="primary-navigation" aria-label="Үндсэн цэс" className={mobileMenuOpen ? "nav-open" : ""}>
           {navItems.map((item) =>
             item === "Үйлчилгээ" ? (
               <div className="nav-dropdown" key={item} ref={servicesRef}>
@@ -521,7 +547,15 @@ export default function BookingPage() {
                 {servicesOpen && (
                   <div className="nav-dropdown-menu" role="menu">
                     {navServices.map(([label, href]) => (
-                      <a href={href} key={label} role="menuitem" onClick={() => setServicesOpen(false)}>
+                      <a
+                        href={href}
+                        key={label}
+                        role="menuitem"
+                        onClick={() => {
+                          setServicesOpen(false);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
                         {label}
                       </a>
                     ))}
@@ -529,7 +563,12 @@ export default function BookingPage() {
                 )}
               </div>
             ) : (
-              <a key={item} className={item === "Цаг захиалах" ? "active" : ""} href={navHref(item)}>
+              <a
+                key={item}
+                className={item === "Цаг захиалах" ? "active" : ""}
+                href={navHref(item)}
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 {item}
               </a>
             )
@@ -585,7 +624,6 @@ export default function BookingPage() {
       </header>
 
       <div className={styles.banner}>
-        <h1>Цаг захиалах</h1>
         <p>Үйлчилгээ, бариачаа сонгоод, өөрт тохиромжтой цагаа захиалаарай.</p>
       </div>
 

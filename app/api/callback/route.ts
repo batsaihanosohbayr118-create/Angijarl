@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       service: "gmail",
       auth: {
         user: process.env.GMAIL_USER, // жишээ нь: mywebsite@gmail.com
-        pass: process.env.GMAIL_APP_PASSWORD, // Gmail-ийн "App password" (энгийн нууц үг биш)
+        pass: process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, ""), // Gmail-ийн "App password" (энгийн нууц үг биш)
       },
     });
 

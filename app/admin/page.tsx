@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
 /* ===================== Types ===================== */
@@ -255,6 +255,343 @@ function StatCard({ icon, value, label }: { icon: string; value: string | number
   );
 }
 
+function Dropdown({
+  value,
+  onChange,
+  options,
+  placeholder = "Сонгох",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const selected = options.find((option) => option.value === value);
+
+  return (
+    <div className={`admin-select${open ? " open" : ""}`} ref={ref}>
+      <button
+        type="button"
+        className="admin-select-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className={selected ? undefined : "placeholder"}>{selected ? selected.label : placeholder}</span>
+        <span className={`admin-select-chevron${open ? " open" : ""}`} aria-hidden="true">
+          <svg viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      {open && (
+        <ul className="admin-select-menu" role="listbox">
+          {options.map((option) => (
+            <li key={option.value} role="option" aria-selected={option.value === value}>
+              <button
+                type="button"
+                className={option.value === value ? "active" : ""}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+              >
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const weekdayLabels = ["Да", "Мя", "Лх", "Пү", "Ба", "Бя", "Ня"];
+const monthLabels = [
+  "1-р сар", "2-р сар", "3-р сар", "4-р сар", "5-р сар", "6-р сар",
+  "7-р сар", "8-р сар", "9-р сар", "10-р сар", "11-р сар", "12-р сар",
+];
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function toDateValue(year: number, month: number, day: number) {
+  return `${year}-${pad2(month + 1)}-${pad2(day)}`;
+}
+
+function parseDateValue(value: string): { year: number; month: number; day: number } | null {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  return { year: Number(match[1]), month: Number(match[2]) - 1, day: Number(match[3]) };
+}
+
+function buildCalendarCells(year: number, month: number) {
+  const jsWeekday = new Date(year, month, 1).getDay();
+  const leadingBlanks = (jsWeekday + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < leadingBlanks; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+function DatePicker({
+  value,
+  onChange,
+  placeholder = "Огноо сонгох",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const today = useMemo(() => new Date(), []);
+  const [viewYear, setViewYear] = useState(() => parseDateValue(value)?.year ?? today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => parseDateValue(value)?.month ?? today.getMonth());
+
+  const openPicker = () => {
+    const parsed = parseDateValue(value);
+    setViewYear(parsed?.year ?? today.getFullYear());
+    setViewMonth(parsed?.month ?? today.getMonth());
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const goPrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewYear((y) => y - 1);
+      setViewMonth(11);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+
+  const goNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewYear((y) => y + 1);
+      setViewMonth(0);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  const cells = buildCalendarCells(viewYear, viewMonth);
+  const todayValue = toDateValue(today.getFullYear(), today.getMonth(), today.getDate());
+
+  return (
+    <div className={`admin-date${open ? " open" : ""}`} ref={ref}>
+      <button
+        type="button"
+        className="admin-select-trigger"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => (open ? setOpen(false) : openPicker())}
+      >
+        <span className={value ? undefined : "placeholder"}>{value || placeholder}</span>
+        <span className="admin-date-icon" aria-hidden="true">
+          <Icon name="bookings" />
+        </span>
+      </button>
+
+      {open && (
+        <div className="admin-date-popup" role="dialog" aria-label="Огноо сонгох">
+          <div className="admin-date-head">
+            <button type="button" aria-label="Өмнөх сар" onClick={goPrevMonth}>‹</button>
+            <strong>{monthLabels[viewMonth]} {viewYear}</strong>
+            <button type="button" aria-label="Дараах сар" onClick={goNextMonth}>›</button>
+          </div>
+
+          <div className="admin-date-weekdays">
+            {weekdayLabels.map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
+
+          <div className="admin-date-grid">
+            {cells.map((day, index) => {
+              if (day === null) return <span key={`blank-${index}`} />;
+              const dateValue = toDateValue(viewYear, viewMonth, day);
+              const isSelected = dateValue === value;
+              const isToday = dateValue === todayValue;
+              return (
+                <button
+                  key={dateValue}
+                  type="button"
+                  className={`${isSelected ? "selected" : ""}${isToday ? " today" : ""}`}
+                  onClick={() => {
+                    onChange(dateValue);
+                    setOpen(false);
+                  }}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          {value && (
+            <button
+              type="button"
+              className="admin-date-clear"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+            >
+              Цэвэрлэх
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const timeHours = Array.from({ length: 24 }, (_, i) => pad2(i));
+const timeMinutes = ["00", "15", "30", "45"];
+
+function TimePicker({
+  value,
+  onChange,
+  placeholder = "Цаг сонгох",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const hourListRef = useRef<HTMLDivElement>(null);
+  const minuteListRef = useRef<HTMLDivElement>(null);
+
+  const [hour, minute] = value ? value.split(":") : [undefined, undefined];
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    hourListRef.current?.querySelector(".selected")?.scrollIntoView({ block: "center" });
+    minuteListRef.current?.querySelector(".selected")?.scrollIntoView({ block: "center" });
+  }, [open]);
+
+  const pickHour = (h: string) => onChange(`${h}:${minute ?? "00"}`);
+  const pickMinute = (m: string) => onChange(`${hour ?? "00"}:${m}`);
+
+  return (
+    <div className={`admin-time${open ? " open" : ""}`} ref={ref}>
+      <button
+        type="button"
+        className="admin-select-trigger"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className={value ? undefined : "placeholder"}>{value || placeholder}</span>
+        <span className="admin-time-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M12 7.5V12l3 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      {open && (
+        <div className="admin-time-popup" role="dialog" aria-label="Цаг сонгох">
+          <div className="admin-time-columns">
+            <div className="admin-time-col">
+              <span className="admin-time-col-label">Цаг</span>
+              <div className="admin-time-col-list" ref={hourListRef}>
+                {timeHours.map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    className={h === hour ? "selected" : ""}
+                    onClick={() => pickHour(h)}
+                  >
+                    {h}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="admin-time-col">
+              <span className="admin-time-col-label">Минут</span>
+              <div className="admin-time-col-list" ref={minuteListRef}>
+                {timeMinutes.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={m === minute ? "selected" : ""}
+                    onClick={() => pickMinute(m)}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {value && (
+            <button
+              type="button"
+              className="admin-date-clear"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+            >
+              Цэвэрлэх
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function statusBadgeClass(status: BookingStatus) {
   if (status === "хүлээгдэж буй") return "pending";
   if (status === "баталгаажсан") return "confirmed";
@@ -284,6 +621,30 @@ export default function AdminPage() {
   const checkedAuth = sessionSnapshot !== pendingSessionSnapshot;
 
   const [tab, setTab] = useState<TabKey>("overview");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const recentBookingsWrapRef = useRef<HTMLDivElement>(null);
+  const usersWrapRef = useRef<HTMLDivElement>(null);
+  const bookingsWrapRef = useRef<HTMLDivElement>(null);
+  const couponsWrapRef = useRef<HTMLDivElement>(null);
+  const teachersGridRef = useRef<HTMLDivElement>(null);
+  const servicesGridRef = useRef<HTMLDivElement>(null);
+
+  const scrollCards = (wrapRef: React.RefObject<HTMLDivElement | null>, direction: 1 | -1) => {
+    const tbody = wrapRef.current?.querySelector("tbody");
+    if (!tbody) return;
+    const card = tbody.querySelector("tr");
+    const step = card ? card.getBoundingClientRect().width + 12 : tbody.clientWidth;
+    tbody.scrollBy({ left: direction * step, behavior: "smooth" });
+  };
+
+  const scrollGridCards = (gridRef: React.RefObject<HTMLDivElement | null>, direction: 1 | -1) => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const card = grid.querySelector(":scope > *");
+    const step = card ? card.getBoundingClientRect().width + 18 : grid.clientWidth;
+    grid.scrollBy({ left: direction * step, behavior: "smooth" });
+  };
 
   const [users, setUsers] = useState<AppUser[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -789,22 +1150,40 @@ export default function AdminPage() {
 
   return (
     <main className="admin-page">
-      <aside className="admin-sidebar">
-        <div className="admin-sidebar-brand">
-          <Image className="admin-sidebar-logo" src="/logo.jpg" alt="АНГИЖРАЛ" width={40} height={40} />
-          <div>
-            <strong>АНГИЖРАЛ</strong>
-            <span>Админ самбар</span>
+      <aside className={`admin-sidebar${mobileNavOpen ? " mobile-open" : ""}`}>
+        <div className="admin-sidebar-topline">
+          <div className="admin-sidebar-brand">
+            <Image className="admin-sidebar-logo" src="/logo.jpg" alt="АНГИЖРАЛ" width={40} height={40} />
+            <div>
+              <strong>АНГИЖРАЛ</strong>
+              <span>Админ самбар</span>
+            </div>
           </div>
+
+          <button
+            type="button"
+            className={`admin-nav-toggle${mobileNavOpen ? " open" : ""}`}
+            aria-expanded={mobileNavOpen}
+            aria-controls="admin-primary-nav"
+            aria-label={mobileNavOpen ? "Цэс хаах" : "Цэс нээх"}
+            onClick={() => setMobileNavOpen((open) => !open)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
 
-        <nav className="admin-nav" aria-label="Админ цэс">
+        <nav id="admin-primary-nav" className="admin-nav" aria-label="Админ цэс">
           {navItems.map((item) => (
             <button
               key={item.key}
               type="button"
               className={tab === item.key ? "active" : ""}
-              onClick={() => setTab(item.key)}
+              onClick={() => {
+                setTab(item.key);
+                setMobileNavOpen(false);
+              }}
             >
               <span className="admin-nav-icon">
                 <Icon name={item.icon} />
@@ -815,7 +1194,7 @@ export default function AdminPage() {
         </nav>
 
         <div className="admin-sidebar-footer">
-          <Link href="/">
+          <Link href="/" onClick={() => setMobileNavOpen(false)}>
             <span className="admin-nav-icon">
               <Icon name="home" />
             </span>
@@ -867,32 +1246,40 @@ export default function AdminPage() {
               {recentBookings.length === 0 ? (
                 <p className="admin-empty-state">Одоогоор захиалга алга байна.</p>
               ) : (
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Нэр</th>
-                        <th>Утас</th>
-                        <th>Үйлчилгээ</th>
-                        <th>Огноо</th>
-                        <th>Төлөв</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentBookings.map((b) => (
-                        <tr key={b.id}>
-                          <td>{b.name}</td>
-                          <td>{b.phone}</td>
-                          <td>{b.service}</td>
-                          <td>{b.preferredDate}</td>
-                          <td>
-                            <span className={`admin-badge ${statusBadgeClass(b.status)}`}>{b.status}</span>
-                          </td>
+                <>
+                  <div className="admin-table-wrap" ref={recentBookingsWrapRef}>
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Нэр</th>
+                          <th>Утас</th>
+                          <th>Үйлчилгээ</th>
+                          <th>Огноо</th>
+                          <th>Төлөв</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {recentBookings.map((b) => (
+                          <tr key={b.id}>
+                            <td data-label="Нэр">{b.name}</td>
+                            <td data-label="Утас">{b.phone}</td>
+                            <td data-label="Үйлчилгээ">{b.service}</td>
+                            <td data-label="Огноо">{b.preferredDate}</td>
+                            <td data-label="Төлөв">
+                              <span className={`admin-badge ${statusBadgeClass(b.status)}`}>{b.status}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {recentBookings.length > 1 && (
+                    <div className="admin-card-nav">
+                      <button type="button" aria-label="Өмнөх" onClick={() => scrollCards(recentBookingsWrapRef, -1)}>‹</button>
+                      <button type="button" aria-label="Дараах" onClick={() => scrollCards(recentBookingsWrapRef, 1)}>›</button>
+                    </div>
+                  )}
+                </>
               )}
             </section>
           </>
@@ -919,7 +1306,8 @@ export default function AdminPage() {
             {filteredUsers.length === 0 ? (
               <p className="admin-empty-state">Хайлтад тохирох хэрэглэгч олдсонгүй.</p>
             ) : (
-              <div className="admin-table-wrap">
+              <>
+              <div className="admin-table-wrap" ref={usersWrapRef}>
                 <table className="admin-table">
                   <thead>
                     <tr>
@@ -934,16 +1322,16 @@ export default function AdminPage() {
                   <tbody>
                     {filteredUsers.map((u) => (
                       <tr key={u.id}>
-                        <td>{u.name}</td>
-                        <td>{u.email}</td>
-                        <td>{u.phone}</td>
-                        <td>
+                        <td data-label="Нэр">{u.name}</td>
+                        <td data-label="И-мэйл">{u.email}</td>
+                        <td data-label="Утас">{u.phone}</td>
+                        <td data-label="Эрх">
                           <span className={`admin-badge ${u.role === "admin" ? "role-admin" : "role-user"}`}>
                             {u.role === "admin" ? "Админ" : "Хэрэглэгч"}
                           </span>
                         </td>
-                        <td>{u.joinedAt}</td>
-                        <td>
+                        <td data-label="Элссэн огноо">{u.joinedAt}</td>
+                        <td data-label="Үйлдэл" className="admin-table-actions-cell">
                           <div className="admin-row-actions">
                             <button type="button" className="admin-text-action" onClick={() => toggleRole(u.id)}>
                               {u.role === "admin" ? "Админ эрх хасах" : "Админ болгох"}
@@ -963,6 +1351,13 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              {filteredUsers.length > 1 && (
+                <div className="admin-card-nav">
+                  <button type="button" aria-label="Өмнөх" onClick={() => scrollCards(usersWrapRef, -1)}>‹</button>
+                  <button type="button" aria-label="Дараах" onClick={() => scrollCards(usersWrapRef, 1)}>›</button>
+                </div>
+              )}
+              </>
             )}
           </section>
         )}
@@ -1000,46 +1395,32 @@ export default function AdminPage() {
                   </div>
                   <div className="form-field">
                     <label>Үйлчилгээ</label>
-                    <select
+                    <Dropdown
                       value={bookingDraft.service}
-                      onChange={(event) => setBookingDraft((d) => ({ ...d, service: event.target.value }))}
-                    >
-                      <option value="">Сонгох</option>
-                      {services.map((s) => (
-                        <option key={s.id} value={s.title}>
-                          {s.title}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => setBookingDraft((d) => ({ ...d, service: value }))}
+                      options={services.map((s) => ({ value: s.title, label: s.title }))}
+                    />
                   </div>
                   <div className="form-field">
                     <label>Бариач</label>
-                    <select
+                    <Dropdown
                       value={bookingDraft.specialist}
-                      onChange={(event) => setBookingDraft((d) => ({ ...d, specialist: event.target.value }))}
-                    >
-                      <option value="">Сонгох</option>
-                      {teachers.map((teacher) => (
-                        <option key={teacher.id} value={teacher.name}>
-                          {teacher.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => setBookingDraft((d) => ({ ...d, specialist: value }))}
+                      options={teachers.map((teacher) => ({ value: teacher.name, label: teacher.name }))}
+                    />
                   </div>
                   <div className="form-field">
                     <label>Огноо</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={bookingDraft.preferredDate}
-                      onChange={(event) => setBookingDraft((d) => ({ ...d, preferredDate: event.target.value }))}
+                      onChange={(value) => setBookingDraft((d) => ({ ...d, preferredDate: value }))}
                     />
                   </div>
                   <div className="form-field">
                     <label>Цаг</label>
-                    <input
-                      type="time"
+                    <TimePicker
                       value={bookingDraft.time}
-                      onChange={(event) => setBookingDraft((d) => ({ ...d, time: event.target.value }))}
+                      onChange={(value) => setBookingDraft((d) => ({ ...d, time: value }))}
                     />
                   </div>
                   <div className="form-field admin-form-field-wide">
@@ -1079,7 +1460,8 @@ export default function AdminPage() {
             {filteredBookings.length === 0 ? (
               <p className="admin-empty-state">Энэ төлөвт тохирох захиалга алга байна.</p>
             ) : (
-              <div className="admin-table-wrap">
+              <>
+              <div className="admin-table-wrap" ref={bookingsWrapRef}>
                 <table className="admin-table">
                   <thead>
                     <tr>
@@ -1098,18 +1480,18 @@ export default function AdminPage() {
                   <tbody>
                     {filteredBookings.map((b) => (
                       <tr key={b.id}>
-                        <td>{b.name}</td>
-                        <td>{b.phone}</td>
-                        <td>{b.service}</td>
-                        <td>{b.specialist || "—"}</td>
-                        <td>{b.preferredDate}{b.time ? `, ${b.time}` : ""}</td>
-                        <td>{b.couponCode || "—"}</td>
-                        <td>{formatMoney(b.totalAmount ?? b.servicePrice)}</td>
-                        <td>{b.note || "—"}</td>
-                        <td>
+                        <td data-label="Нэр">{b.name}</td>
+                        <td data-label="Утас">{b.phone}</td>
+                        <td data-label="Үйлчилгээ">{b.service}</td>
+                        <td data-label="Мэргэжилтэн">{b.specialist || "—"}</td>
+                        <td data-label="Огноо">{b.preferredDate}{b.time ? `, ${b.time}` : ""}</td>
+                        <td data-label="Купон">{b.couponCode || "—"}</td>
+                        <td data-label="Дүн">{formatMoney(b.totalAmount ?? b.servicePrice)}</td>
+                        <td data-label="Тэмдэглэл">{b.note || "—"}</td>
+                        <td data-label="Төлөв">
                           <span className={`admin-badge ${statusBadgeClass(b.status)}`}>{b.status}</span>
                         </td>
-                        <td>
+                        <td data-label="Үйлдэл" className="admin-table-actions-cell">
                           <div className="admin-row-actions">
                             {b.status !== "баталгаажсан" && (
                               <button
@@ -1144,6 +1526,13 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              {filteredBookings.length > 1 && (
+                <div className="admin-card-nav">
+                  <button type="button" aria-label="Өмнөх" onClick={() => scrollCards(bookingsWrapRef, -1)}>‹</button>
+                  <button type="button" aria-label="Дараах" onClick={() => scrollCards(bookingsWrapRef, 1)}>›</button>
+                </div>
+              )}
+              </>
             )}
           </section>
         )}
@@ -1254,7 +1643,8 @@ export default function AdminPage() {
             {teachers.length === 0 ? (
               <p className="admin-empty-state">Одоогоор бариач нэмээгүй байна.</p>
             ) : (
-              <div className="admin-services-grid">
+              <>
+              <div className="admin-services-grid" ref={teachersGridRef}>
                 {teachers.map((teacher) => (
                   <article className="admin-service-card" key={teacher.id}>
                     {teacher.photo ? (
@@ -1300,6 +1690,13 @@ export default function AdminPage() {
                   </article>
                 ))}
               </div>
+              {teachers.length > 1 && (
+                <div className="admin-card-nav">
+                  <button type="button" aria-label="Өмнөх" onClick={() => scrollGridCards(teachersGridRef, -1)}>‹</button>
+                  <button type="button" aria-label="Дараах" onClick={() => scrollGridCards(teachersGridRef, 1)}>›</button>
+                </div>
+              )}
+              </>
             )}
           </section>
         )}
@@ -1365,7 +1762,8 @@ export default function AdminPage() {
             {services.length === 0 ? (
               <p className="admin-empty-state">Одоогоор үйлчилгээ нэмээгүй байна.</p>
             ) : (
-              <div className="admin-services-grid">
+              <>
+              <div className="admin-services-grid" ref={servicesGridRef}>
                 {services.map((s) => (
                   <article className="admin-service-card" key={s.id}>
                     <div className="admin-service-photo" style={{ backgroundImage: `url("${s.photo}")` }} aria-hidden="true" />
@@ -1389,6 +1787,13 @@ export default function AdminPage() {
                   </article>
                 ))}
               </div>
+              {services.length > 1 && (
+                <div className="admin-card-nav">
+                  <button type="button" aria-label="Өмнөх" onClick={() => scrollGridCards(servicesGridRef, -1)}>‹</button>
+                  <button type="button" aria-label="Дараах" onClick={() => scrollGridCards(servicesGridRef, 1)}>›</button>
+                </div>
+              )}
+              </>
             )}
           </section>
         )}
@@ -1418,15 +1823,16 @@ export default function AdminPage() {
                   </div>
                   <div className="form-field">
                     <label>Төрөл</label>
-                    <select
+                    <Dropdown
                       value={couponDraft.discountType}
-                      onChange={(event) =>
-                        setCouponDraft((d) => ({ ...d, discountType: event.target.value as CouponDiscountType }))
+                      onChange={(value) =>
+                        setCouponDraft((d) => ({ ...d, discountType: value as CouponDiscountType }))
                       }
-                    >
-                      <option value="percent">Хувь (%)</option>
-                      <option value="amount">Мөнгөн дүн (₮)</option>
-                    </select>
+                      options={[
+                        { value: "percent", label: "Хувь (%)" },
+                        { value: "amount", label: "Мөнгөн дүн (₮)" },
+                      ]}
+                    />
                   </div>
                   <div className="form-field">
                     <label>Хэмжээ</label>
@@ -1441,10 +1847,9 @@ export default function AdminPage() {
                   </div>
                   <div className="form-field">
                     <label>Дуусах огноо</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={couponDraft.expiresAt}
-                      onChange={(event) => setCouponDraft((d) => ({ ...d, expiresAt: event.target.value }))}
+                      onChange={(value) => setCouponDraft((d) => ({ ...d, expiresAt: value }))}
                     />
                   </div>
                   <div className="form-field">
@@ -1459,13 +1864,14 @@ export default function AdminPage() {
                   </div>
                   <div className="form-field">
                     <label>Төлөв</label>
-                    <select
+                    <Dropdown
                       value={couponDraft.active}
-                      onChange={(event) => setCouponDraft((d) => ({ ...d, active: event.target.value }))}
-                    >
-                      <option value="true">Идэвхтэй</option>
-                      <option value="false">Идэвхгүй</option>
-                    </select>
+                      onChange={(value) => setCouponDraft((d) => ({ ...d, active: value }))}
+                      options={[
+                        { value: "true", label: "Идэвхтэй" },
+                        { value: "false", label: "Идэвхгүй" },
+                      ]}
+                    />
                   </div>
                 </div>
                 <div className="admin-form-actions">
@@ -1489,7 +1895,8 @@ export default function AdminPage() {
             {coupons.length === 0 ? (
               <p className="admin-empty-state">Одоогоор купон нэмээгүй байна.</p>
             ) : (
-              <div className="admin-table-wrap">
+              <>
+              <div className="admin-table-wrap" ref={couponsWrapRef}>
                 <table className="admin-table">
                   <thead>
                     <tr>
@@ -1504,19 +1911,19 @@ export default function AdminPage() {
                   <tbody>
                     {coupons.map((coupon) => (
                       <tr key={coupon.id}>
-                        <td>{coupon.code}</td>
-                        <td>{formatCouponValue(coupon)}</td>
-                        <td>
+                        <td data-label="Код">{coupon.code}</td>
+                        <td data-label="Хөнгөлөлт">{formatCouponValue(coupon)}</td>
+                        <td data-label="Ашиглалт">
                           {coupon.usedCount}
                           {coupon.usageLimit ? ` / ${coupon.usageLimit}` : ""}
                         </td>
-                        <td>{coupon.expiresAt || "—"}</td>
-                        <td>
+                        <td data-label="Дуусах">{coupon.expiresAt || "—"}</td>
+                        <td data-label="Төлөв">
                           <span className={`admin-badge ${coupon.active ? "confirmed" : "cancelled"}`}>
                             {coupon.active ? "Идэвхтэй" : "Идэвхгүй"}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Үйлдэл" className="admin-table-actions-cell">
                           <div className="admin-row-actions">
                             <button
                               type="button"
@@ -1541,6 +1948,13 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              {coupons.length > 1 && (
+                <div className="admin-card-nav">
+                  <button type="button" aria-label="Өмнөх" onClick={() => scrollCards(couponsWrapRef, -1)}>‹</button>
+                  <button type="button" aria-label="Дараах" onClick={() => scrollCards(couponsWrapRef, 1)}>›</button>
+                </div>
+              )}
+              </>
             )}
           </section>
         )}
