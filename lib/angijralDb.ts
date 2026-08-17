@@ -278,6 +278,11 @@ async function ensureSchema() {
         )
       `;
       await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS bookings_slot_unique
+        ON bookings (specialist, preferred_date, time)
+        WHERE status <> 'цуцлагдсан' AND specialist <> '' AND time <> ''
+      `;
+      await sql`
         CREATE TABLE IF NOT EXISTS testimonials (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
@@ -643,10 +648,17 @@ export async function createBooking(input: {
     createdAt: new Date().toISOString().slice(0, 10),
   };
 
-  await sql`
-    INSERT INTO bookings (id, name, phone, service, specialist, preferred_date, time, status, note, service_price, coupon_code, discount_amount, total_amount, created_at)
-    VALUES (${booking.id}, ${booking.name}, ${booking.phone}, ${booking.service}, ${booking.specialist}, ${booking.preferredDate}, ${booking.time}, ${booking.status}, ${booking.note}, ${booking.servicePrice ?? null}, ${booking.couponCode ?? null}, ${booking.discountAmount ?? null}, ${booking.totalAmount ?? null}, ${booking.createdAt})
-  `;
+  try {
+    await sql`
+      INSERT INTO bookings (id, name, phone, service, specialist, preferred_date, time, status, note, service_price, coupon_code, discount_amount, total_amount, created_at)
+      VALUES (${booking.id}, ${booking.name}, ${booking.phone}, ${booking.service}, ${booking.specialist}, ${booking.preferredDate}, ${booking.time}, ${booking.status}, ${booking.note}, ${booking.servicePrice ?? null}, ${booking.couponCode ?? null}, ${booking.discountAmount ?? null}, ${booking.totalAmount ?? null}, ${booking.createdAt})
+    `;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+      return { ok: false as const, message: "Уучлаарай, энэ цаг аль хэдийн захиалагдсан байна." };
+    }
+    throw error;
+  }
 
   return { ok: true as const, booking };
 }
