@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createBooking, listBookings } from "../../../lib/angijralDb";
 
-const RECIPIENT_EMAIL = "batsaihanosohbayr118@gmail.com";
+const RECIPIENT_EMAIL = "angijraltuv@yahoo.com";
 
 async function sendBookingNotification(booking: {
   name?: string;
