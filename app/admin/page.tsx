@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import TeacherPhoto from "../components/TeacherPhoto";
+import ServicePhoto from "../components/ServicePhoto";
 
 /* ===================== Types ===================== */
 
@@ -74,39 +76,6 @@ interface Coupon {
 }
 
 type TabKey = "overview" | "users" | "bookings" | "teachers" | "services" | "coupons";
-
-/* ===================== Storage keys & seed data ===================== */
-
-const SERVICES_KEY = "angijral_admin_services_v1";
-
-const seedServices: ServiceItem[] = [
-  { id: "s1", title: "Оффис бариа засал", description: "Суудал дээр нь хийх хүзүү, толгой, мөр гарын бариа", photo: "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900" },
-  { id: "s2", title: "Байгууллагын бясалгал", description: "Стресс тайлж, бүтээмж нэмэх сонирхолтой хөтөлбөрт бүлгийн бясалгал", photo: "https://images.pexels.com/photos/3822622/pexels-photo-3822622.jpeg?auto=compress&cs=tinysrgb&w=900" },
-  { id: "s3", title: "Хоол зүйн сургалт", description: "Хоол зүйн бүлгийн сургалт болон ганцаарчилсан зөвлөгөө, дэглэм", photo: "https://images.pexels.com/photos/5905902/pexels-photo-5905902.jpeg?auto=compress&cs=tinysrgb&w=900" },
-  { id: "s4", title: "Сэтгэл зүйн сургалт", description: "Мэргэжлийн сэтгэл зүйчийн бүлгийн сургалт, зөвлөгөө", photo: "https://images.pexels.com/photos/7176026/pexels-photo-7176026.jpeg?auto=compress&cs=tinysrgb&w=900" },
-];
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveToStorage<T>(key: string, value: T) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* ignore */
-  }
-}
-
-function makeId() {
-  return Math.random().toString(36).slice(2, 10);
-}
 
 const pendingSessionSnapshot = "__pending__";
 
@@ -648,9 +617,12 @@ export default function AdminPage() {
 
   const [users, setUsers] = useState<AppUser[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [services, setServices] = useState<ServiceItem[]>(seedServices);
+  const [services, setServices] = useState<ServiceItem[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [heroImageDraft, setHeroImageDraft] = useState("");
+  const [heroImageSaving, setHeroImageSaving] = useState(false);
+  const [heroImageMessage, setHeroImageMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
   const [userSearch, setUserSearch] = useState("");
   const [bookingFilter, setBookingFilter] = useState<"Бүгд" | BookingStatus>("Бүгд");
@@ -669,6 +641,7 @@ export default function AdminPage() {
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [serviceDraft, setServiceDraft] = useState({ title: "", description: "", photo: "" });
+  const [serviceFormError, setServiceFormError] = useState<string | null>(null);
 
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
@@ -691,6 +664,7 @@ export default function AdminPage() {
     photo: "",
     serviceIds: [] as string[],
   });
+  const [teacherFormError, setTeacherFormError] = useState<string | null>(null);
 
   const isAdmin = session?.role === "admin";
 
@@ -739,9 +713,9 @@ export default function AdminPage() {
       try {
         const response = await fetch("/api/admin/services");
         const data = (await response.json()) as { services?: ServiceItem[] };
-        setServices(response.ok && Array.isArray(data.services) ? data.services : seedServices);
+        setServices(response.ok && Array.isArray(data.services) ? data.services : []);
       } catch {
-        setServices(loadFromStorage(SERVICES_KEY, seedServices));
+        setServices([]);
       }
     };
 
@@ -755,11 +729,24 @@ export default function AdminPage() {
       }
     };
 
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = (await response.json()) as { heroImage?: string };
+        if (response.ok && data.heroImage) {
+          setHeroImageDraft(data.heroImage);
+        }
+      } catch {
+        /* leave the field empty */
+      }
+    };
+
     void loadUsers();
     void loadBookings();
     void loadTeachers();
     void loadServices();
     void loadCoupons();
+    void loadSettings();
   }, [isAdmin]);
 
   const handleLogout = () => {
@@ -905,6 +892,7 @@ export default function AdminPage() {
   };
 
   const openTeacherForm = (teacher?: Teacher) => {
+    setTeacherFormError(null);
     if (teacher) {
       setEditingTeacherId(teacher.id);
       setTeacherDraft({
@@ -934,6 +922,7 @@ export default function AdminPage() {
   const submitTeacher = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!teacherDraft.name.trim() || !teacherDraft.role.trim() || !teacherDraft.bio.trim()) return;
+    setTeacherFormError(null);
 
     const payload = {
       name: teacherDraft.name.trim(),
@@ -950,17 +939,21 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingTeacherId ? { id: editingTeacherId, ...payload } : payload),
       });
-      const data = (await response.json()) as { teacher?: Teacher };
+      const data = (await response.json()) as { teacher?: Teacher; message?: string };
 
-      if (response.ok && data.teacher) {
-        setTeachers((current) =>
-          editingTeacherId
-            ? current.map((teacher) => (teacher.id === editingTeacherId ? data.teacher! : teacher))
-            : [data.teacher!, ...current]
-        );
+      if (!response.ok || !data.teacher) {
+        setTeacherFormError(data.message ?? "Хадгалахад алдаа гарлаа. Дахин оролдоно уу.");
+        return;
       }
+
+      setTeachers((current) =>
+        editingTeacherId
+          ? current.map((teacher) => (teacher.id === editingTeacherId ? data.teacher! : teacher))
+          : [data.teacher!, ...current]
+      );
     } catch {
-      /* ignore */
+      setTeacherFormError("Сүлжээний алдаа гарлаа. Дахин оролдоно уу.");
+      return;
     }
 
     setShowTeacherForm(false);
@@ -986,6 +979,7 @@ export default function AdminPage() {
   };
 
   const openServiceForm = (service?: ServiceItem) => {
+    setServiceFormError(null);
     if (service) {
       setEditingServiceId(service.id);
       setServiceDraft({ title: service.title, description: service.description, photo: service.photo });
@@ -999,6 +993,7 @@ export default function AdminPage() {
   const submitService = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!serviceDraft.title.trim()) return;
+    setServiceFormError(null);
 
     const payload = {
       title: serviceDraft.title.trim(),
@@ -1012,34 +1007,54 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingServiceId ? { id: editingServiceId, ...payload } : payload),
       });
-      const data = (await response.json()) as { service?: ServiceItem };
+      const data = (await response.json()) as { service?: ServiceItem; message?: string };
 
-      if (response.ok && data.service) {
-        setServices((current) =>
-          editingServiceId
-            ? current.map((service) => (service.id === editingServiceId ? data.service! : service))
-            : [data.service!, ...current]
-        );
+      if (!response.ok || !data.service) {
+        setServiceFormError(data.message ?? "Хадгалахад алдаа гарлаа. Дахин оролдоно уу.");
+        return;
       }
-    } catch {
-      const fallbackService: ServiceItem = {
-        id: editingServiceId ?? makeId(),
-        title: serviceDraft.title.trim(),
-        description: serviceDraft.description.trim(),
-        photo: serviceDraft.photo.trim() || "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900",
-      };
 
       setServices((current) =>
         editingServiceId
-          ? current.map((service) => (service.id === editingServiceId ? fallbackService : service))
-          : [fallbackService, ...current]
+          ? current.map((service) => (service.id === editingServiceId ? data.service! : service))
+          : [data.service!, ...current]
       );
-      saveToStorage(SERVICES_KEY, editingServiceId ? services.map((service) => (service.id === editingServiceId ? fallbackService : service)) : [fallbackService, ...services]);
+    } catch {
+      setServiceFormError("Сүлжээний алдаа гарлаа. Дахин оролдоно уу.");
+      return;
     }
 
     setShowServiceForm(false);
     setEditingServiceId(null);
     setServiceDraft({ title: "", description: "", photo: "" });
+  };
+
+  const submitHeroImage = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!heroImageDraft.trim()) return;
+    setHeroImageMessage(null);
+    setHeroImageSaving(true);
+
+    try {
+      const response = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ heroImage: heroImageDraft.trim() }),
+      });
+      const data = (await response.json()) as { heroImage?: string; message?: string };
+
+      if (!response.ok || !data.heroImage) {
+        setHeroImageMessage({ type: "error", text: data.message ?? "Хадгалахад алдаа гарлаа. Дахин оролдоно уу." });
+        return;
+      }
+
+      setHeroImageDraft(data.heroImage);
+      setHeroImageMessage({ type: "ok", text: "Нүүр хуудасны зураг шинэчлэгдлээ." });
+    } catch {
+      setHeroImageMessage({ type: "error", text: "Сүлжээний алдаа гарлаа. Дахин оролдоно уу." });
+    } finally {
+      setHeroImageSaving(false);
+    }
   };
 
   const deleteService = async (id: string) => {
@@ -1153,7 +1168,7 @@ export default function AdminPage() {
       <aside className={`admin-sidebar${mobileNavOpen ? " mobile-open" : ""}`}>
         <div className="admin-sidebar-topline">
           <div className="admin-sidebar-brand">
-            <Image className="admin-sidebar-logo" src="/logo.jpg" alt="АНГИЖРАЛ" width={40} height={40} />
+            <Image className="admin-sidebar-logo" src="/logo.jpg" alt="АНГИЖРАЛ" width={40} height={40} priority />
             <div>
               <strong>АНГИЖРАЛ</strong>
               <span>Админ самбар</span>
@@ -1234,6 +1249,46 @@ export default function AdminPage() {
               <StatCard icon="services" value={services.length} label="Идэвхтэй үйлчилгээ" />
               <StatCard icon="coupons" value={coupons.length} label="Купон" />
             </div>
+
+            <section className="admin-panel">
+              <div className="admin-panel-head">
+                <h2>Нүүр хуудасны зураг</h2>
+              </div>
+
+              <form className="admin-inline-form" onSubmit={submitHeroImage}>
+                <div className="admin-form-grid">
+                  <div className="form-field admin-form-field-wide">
+                    <label>Зургийн холбоос (URL)</label>
+                    <input
+                      type="text"
+                      value={heroImageDraft}
+                      onChange={(event) => setHeroImageDraft(event.target.value)}
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+
+                {heroImageDraft && (
+                  <div
+                    className="admin-hero-preview"
+                    style={{ backgroundImage: `url("${heroImageDraft}")` }}
+                    aria-hidden="true"
+                  />
+                )}
+
+                {heroImageMessage && (
+                  <p className={heroImageMessage.type === "error" ? "form-error" : "form-success"}>
+                    {heroImageMessage.text}
+                  </p>
+                )}
+
+                <div className="admin-form-actions">
+                  <button type="submit" className="admin-primary-btn" disabled={heroImageSaving}>
+                    {heroImageSaving ? "Хадгалж байна..." : "Хадгалах"}
+                  </button>
+                </div>
+              </form>
+            </section>
 
             <section className="admin-panel">
               <div className="admin-panel-head">
@@ -1622,6 +1677,7 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </div>
+                {teacherFormError && <p className="form-error">{teacherFormError}</p>}
                 <div className="admin-form-actions">
                   <button
                     type="button"
@@ -1629,6 +1685,7 @@ export default function AdminPage() {
                     onClick={() => {
                       setShowTeacherForm(false);
                       setEditingTeacherId(null);
+                      setTeacherFormError(null);
                     }}
                   >
                     Цуцлах
@@ -1647,13 +1704,14 @@ export default function AdminPage() {
               <div className="admin-services-grid" ref={teachersGridRef}>
                 {teachers.map((teacher) => (
                   <article className="admin-service-card" key={teacher.id}>
-                    {teacher.photo ? (
-                      <Image className="admin-teacher-photo" src={teacher.photo} alt={teacher.name} width={120} height={120} />
-                    ) : (
-                      <div className="admin-teacher-photo fallback" aria-hidden="true">
-                        {teacher.initials}
-                      </div>
-                    )}
+                    <TeacherPhoto
+                      photo={teacher.photo}
+                      alt={teacher.name}
+                      initials={teacher.initials}
+                      className="admin-teacher-photo"
+                      width={120}
+                      height={120}
+                    />
                     <div className="admin-service-body">
                       <h3>{teacher.name}</h3>
                       <p>
@@ -1741,6 +1799,7 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
+                {serviceFormError && <p className="form-error">{serviceFormError}</p>}
                 <div className="admin-form-actions">
                   <button
                     type="button"
@@ -1748,6 +1807,7 @@ export default function AdminPage() {
                     onClick={() => {
                       setShowServiceForm(false);
                       setEditingServiceId(null);
+                      setServiceFormError(null);
                     }}
                   >
                     Цуцлах
@@ -1766,7 +1826,9 @@ export default function AdminPage() {
               <div className="admin-services-grid" ref={servicesGridRef}>
                 {services.map((s) => (
                   <article className="admin-service-card" key={s.id}>
-                    <div className="admin-service-photo" style={{ backgroundImage: `url("${s.photo}")` }} aria-hidden="true" />
+                    <div className="admin-service-photo">
+                      <ServicePhoto photo={s.photo} alt={s.title} sizes="220px" />
+                    </div>
                     <div className="admin-service-body">
                       <h3>{s.title}</h3>
                       <p>{s.description}</p>

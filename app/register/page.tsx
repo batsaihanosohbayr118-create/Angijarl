@@ -126,7 +126,7 @@ export default function RegisterPage() {
         <div className="auth-card">
           <section className="auth-visual">
             <div className="auth-visual-top">
-              <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
+              <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} priority />
             </div>
             <div className="auth-visual-bottom">
               <h2>Өнөөдрөөс эрүүл дадал эхэлье</h2>

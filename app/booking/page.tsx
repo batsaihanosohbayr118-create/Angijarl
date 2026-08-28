@@ -509,7 +509,7 @@ export default function BookingPage() {
     <div className={styles.page}>
       <header className="site-header" ref={headerRef}>
         <Link className="brand" href="/">
-          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
+          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} priority />
         </Link>
 
         <button

@@ -4,6 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import TypewriterText from "../components/TypewriterText";
+import { attachScrollReveal } from "../components/scrollReveal";
+import TeacherPhoto from "../components/TeacherPhoto";
 
 const navItems = ["Нүүр", "Бидний тухай", "Үйлчилгээ", "Бариачид", "Цаг захиалах"];
 
@@ -61,36 +64,6 @@ function ContactIcon({ type }: { type: "phone" | "mail" | "messenger" | "address
     </svg>
   );
 }
-
-const defaultTeachers: Teacher[] = [
-  {
-    id: "teacher-bat-erdene",
-    name: "Б.Бат-Эрдэнэ",
-    role: "Ахлах бариач",
-    years: 15,
-    initials: "Б",
-    photo: "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=700",
-    bio: "Клиникийн болон эмчилгээний салбарт 15 гаруй жил ажилласан туршлагатай ахлах бариач. Анхан шатны болон нарийн мэргэжлийн бариа заслын үйлчилгээг үзүүлнэ.",
-  },
-  {
-    id: "teacher-enkhtuyaa",
-    name: "Ц.Энхтуяа",
-    role: "Бариач",
-    years: 10,
-    initials: "Ц",
-    photo: "https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=700",
-    bio: "Relax болон Cupping массажийн чиглэлээр мэргэшсэн, үйлчлүүлэгч бүрт хамгийн тохиромжтой аргыг сонгож үйлчилдэг.",
-  },
-  {
-    id: "teacher-orgil",
-    name: "Г.Оргил",
-    role: "Бариач",
-    years: 8,
-    initials: "Г",
-    photo: "https://images.pexels.com/photos/6627534/pexels-photo-6627534.jpeg?auto=compress&cs=tinysrgb&w=700",
-    bio: "Спорт бариа болон гуаша заслын чиглэлээр ажилладаг бөгөөд тамирчид болон идэвхтэй амьдралын хэв маягтай үйлчлүүлэгчдэд эмчилгээ хийдэг.",
-  },
-];
 
 type SessionState = { role: "user" | "admin"; name: string } | null;
 
@@ -163,7 +136,7 @@ export default function Teachers() {
   const profileRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const [teachers, setTeachers] = useState<Teacher[]>(defaultTeachers);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
   useEffect(() => {
     const loadTeachers = async () => {
@@ -174,7 +147,7 @@ export default function Teachers() {
           setTeachers(data.teachers);
         }
       } catch {
-        setTeachers(defaultTeachers);
+        setTeachers([]);
       }
     };
 
@@ -227,11 +200,15 @@ export default function Teachers() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    return attachScrollReveal();
+  }, [teachers]);
+
   return (
     <main>
       <header className="site-header" ref={headerRef}>
         <Link className="brand" href="/">
-          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
+          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} priority />
         </Link>
 
         <button
@@ -346,22 +323,27 @@ export default function Teachers() {
       </header>
 
       <section className="about-hero">
-        <h1>Бариачид</h1>
-        <p>
-          Клиник болон эмчилгээний салбарт олон жил ажилласан, өндөр ур чадвартай
-          мэргэжилтнүүдээс бүрдсэн манай баг таны эрүүл мэндийг сэргээхэд туслана.
-        </p>
+        <TypewriterText as="h1" text="Бариачид" speed={55} startDelay={200} />
+        <TypewriterText
+          as="p"
+          text="Клиник болон эмчилгээний салбарт олон жил ажилласан, өндөр ур чадвартай мэргэжилтнүүдээс бүрдсэн манай баг таны эрүүл мэндийг сэргээхэд туслана."
+          speed={16}
+          startDelay={700}
+        />
       </section>
 
       <section className="teachers-grid-section">
         <div className="teacher-card-grid">
-          {teachers.map((teacher) => (
-            <article className="teacher-card" key={teacher.id}>
-              {teacher.photo ? (
-                <Image className="teacher-card-photo" src={teacher.photo} alt={teacher.name} width={180} height={180} />
-              ) : (
-                <div className="teacher-card-photo fallback" aria-hidden="true">{teacher.initials}</div>
-              )}
+          {teachers.map((teacher, index) => (
+            <article className="teacher-card reveal" style={{ transitionDelay: `${(index % 3) * 130}ms` }} key={teacher.id}>
+              <TeacherPhoto
+                photo={teacher.photo}
+                alt={teacher.name}
+                initials={teacher.initials}
+                className="teacher-card-photo"
+                width={180}
+                height={180}
+              />
               <h3>{teacher.name}</h3>
               <p className="teacher-card-role">{teacher.role} · {teacher.years}+ жил туршлагатай</p>
               <p className="teacher-card-bio">{teacher.bio}</p>
@@ -370,7 +352,7 @@ export default function Teachers() {
         </div>
       </section>
 
-      <section className="about-cta">
+      <section className="about-cta reveal">
         <h2>Манай мэргэжилтнүүдтэй цаг захиалж, эрүүл мэндээ сэргээгээрэй</h2>
         <p>Манай үйлчилгээнүүдтэй танилцаад, өөрт тохирсныг сонгоорой.</p>
         <a className="primary-button" href="/booking">

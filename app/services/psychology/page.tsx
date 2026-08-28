@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import TypewriterText from "../../components/TypewriterText";
+import { attachScrollReveal } from "../../components/scrollReveal";
 
 const navItems = ["Нүүр", "Бидний тухай", "Үйлчилгээ", "Бариачид", "Цаг захиалах"];
 
@@ -176,11 +178,15 @@ export default function PsychologyPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    return attachScrollReveal();
+  }, []);
+
   return (
     <main>
       <header className="site-header" ref={headerRef}>
         <Link className="brand" href="/">
-          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
+          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} priority />
         </Link>
 
         <button
@@ -290,13 +296,18 @@ export default function PsychologyPage() {
       </header>
 
       <section className="about-hero about-hero--psychology">
-        <h1>Сэтгэл зүйн сургалт</h1>
-        <p>Мэргэжлийн сэтгэл зүйчийн бүлгийн сургалт, зөвлөгөө.</p>
+        <TypewriterText as="h1" text="Сэтгэл зүйн сургалт" speed={50} startDelay={200} />
+        <TypewriterText
+          as="p"
+          text="Мэргэжлийн сэтгэл зүйчийн бүлгийн сургалт, зөвлөгөө."
+          speed={22}
+          startDelay={700}
+        />
       </section>
 
       <section className="about-story">
         <div
-          className="about-story-photo"
+          className="about-story-photo reveal"
           style={{
             backgroundImage:
               'url("https://images.pexels.com/photos/7176026/pexels-photo-7176026.jpeg?auto=compress&cs=tinysrgb&w=900")',
@@ -305,7 +316,7 @@ export default function PsychologyPage() {
           }}
           aria-hidden="true"
         />
-        <div className="about-story-copy">
+        <div className="about-story-copy reveal" style={{ transitionDelay: "140ms" }}>
           <h2>Тухай</h2>
           <p>
             Сэтгэл зүйн эрүүл мэнд нь бие махбодийн эрүүл мэндтэй адил чухал. Манай сэтгэл зүйн сургалт
@@ -320,15 +331,15 @@ export default function PsychologyPage() {
       </section>
 
       <section className="why-section">
-        <div className="section-title">
+        <div className="section-title reveal">
           <span />
           <h2>Юу багтдаг вэ</h2>
           <span />
         </div>
 
         <div className="why-grid">
-          {perks.map((perk) => (
-            <article className="why-card" key={perk}>
+          {perks.map((perk, index) => (
+            <article className="why-card reveal" style={{ transitionDelay: `${(index % 3) * 140}ms` }} key={perk}>
               <span>
                 <CheckIcon />
               </span>
@@ -338,7 +349,7 @@ export default function PsychologyPage() {
         </div>
       </section>
 
-      <section className="about-cta">
+      <section className="about-cta reveal">
         <h2>Сэтгэл зүйн сургалтаа захиалаарай</h2>
         <p>Нэг удаагийн үнэ 45,000₮. Танд тохирох цагийг сонгоод шууд захиална уу.</p>
         <a className="primary-button" href="/booking">

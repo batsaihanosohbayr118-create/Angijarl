@@ -97,6 +97,8 @@ const defaultTeacherPhotos = [
 const defaultServicePhoto =
   "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900";
 
+const defaultHeroImage = "https://i.pinimg.com/736x/1a/93/a8/1a93a83d8a146f771792da66af330d04.jpg";
+
 const seedServices: DbService[] = [
   {
     id: "s1",
@@ -323,6 +325,12 @@ async function ensureSchema() {
           usage_limit INTEGER,
           used_count INTEGER NOT NULL DEFAULT 0,
           created_at TEXT NOT NULL
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
         )
       `;
 
@@ -1192,4 +1200,29 @@ export async function createTestimonial(input: { name?: string; message?: string
     ok: true as const,
     testimonial: { ...testimonial, initials: createInitials(testimonial.name) },
   };
+}
+
+export async function getSiteSettings() {
+  await ensureSchema();
+
+  const rows = await sql`SELECT key, value FROM settings WHERE key = 'hero_image' LIMIT 1`;
+  const heroImage = rows.length > 0 ? (rows[0].value as string) : defaultHeroImage;
+
+  return { heroImage };
+}
+
+export async function updateSiteSettings(input: { heroImage?: string }) {
+  await ensureSchema();
+
+  const heroImage = input.heroImage?.trim();
+  if (!heroImage) {
+    return { ok: false as const, message: "Зургийн URL-ээ оруулна уу." };
+  }
+
+  await sql`
+    INSERT INTO settings (key, value) VALUES ('hero_image', ${heroImage})
+    ON CONFLICT (key) DO UPDATE SET value = ${heroImage}
+  `;
+
+  return { ok: true as const, heroImage };
 }

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import TypewriterText from "./components/TypewriterText";
+import { attachScrollReveal } from "./components/scrollReveal";
+import TeacherPhoto from "./components/TeacherPhoto";
+import ServicePhoto from "./components/ServicePhoto";
 
 type Testimonial = {
   id: string;
@@ -82,33 +85,6 @@ const defaultTestimonials: Testimonial[] = [
   },
 ];
 
-const defaultOfferedServices: ServiceItem[] = [
-  {
-    id: "s1",
-    title: "Оффис бариа засал",
-    description: "Суудал дээр нь хийх хүзүү, толгой, мөр гарын бариа",
-    photo: "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900",
-  },
-  {
-    id: "s2",
-    title: "Байгууллагын бясалгал",
-    description: "Стресс тайлж, бүтээмж нэмэх сонирхолтой хөтөлбөрт бүлгийн бясалгал",
-    photo: "https://images.pexels.com/photos/3822622/pexels-photo-3822622.jpeg?auto=compress&cs=tinysrgb&w=900",
-  },
-  {
-    id: "s3",
-    title: "Хоол зүйн сургалт",
-    description: "Хоол зүйн бүлгийн сургалт болон ганцаарчилсан зөвлөгөө, дэглэм",
-    photo: "https://images.pexels.com/photos/5905902/pexels-photo-5905902.jpeg?auto=compress&cs=tinysrgb&w=900",
-  },
-  {
-    id: "s4",
-    title: "Сэтгэл зүйн сургалт",
-    description: "Мэргэжлийн сэтгэл зүйчийн бүлгийн сургалт, зөвлөгөө",
-    photo: "https://images.pexels.com/photos/7176026/pexels-photo-7176026.jpeg?auto=compress&cs=tinysrgb&w=900",
-  },
-];
-
 const faqs = [
   [
     "Нэг удаад хэдэн хүн үйлчлүүлж болох вэ?",
@@ -157,33 +133,6 @@ const contactItems = [
   ["mail", "angijraltuv@yahoo.com", "mailto:angijraltuv@yahoo.com"],
   ["messenger", "Ангижрал сургалт Angijral surgalt", "https://m.me/angijral"]
 ] as const;
-
-const defaultTeachers: Teacher[] = [
-  {
-    id: "teacher-bat-erdene",
-    name: "Б.Бат-Эрдэнэ",
-    role: "Ахлах бариач",
-    years: 15,
-    photo: "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=700",
-    initials: "Б",
-  },
-  {
-    id: "teacher-enkhtuyaa",
-    name: "Ц.Энхтуяа",
-    role: "Бариач",
-    years: 10,
-    photo: "https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=700",
-    initials: "Ц",
-  },
-  {
-    id: "teacher-orgil",
-    name: "Г.Оргил",
-    role: "Бариач",
-    years: 8,
-    photo: "https://images.pexels.com/photos/6627534/pexels-photo-6627534.jpeg?auto=compress&cs=tinysrgb&w=700",
-    initials: "Г",
-  },
-];
 
 const partners = [
   "AIRMARKET",
@@ -437,31 +386,13 @@ function attachAutoCarousel(track: HTMLDivElement, cardSelector: string, maxWidt
   };
 }
 
-function attachScrollReveal() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return () => {};
-
-  const items = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
-  if (items.length === 0) return () => {};
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        entry.target.classList.toggle("in-view", entry.isIntersecting);
-      });
-    },
-    { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
-  );
-
-  items.forEach((item) => observer.observe(item));
-  return () => observer.disconnect();
-}
-
 export default function Home() {
   const router = useRouter();
-  const [teachers, setTeachers] = useState<Teacher[]>(defaultTeachers);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teacherIndex, setTeacherIndex] = useState(0);
-  const activeTeacher = teachers[teacherIndex] ?? defaultTeachers[0];
-  const [offeredServices, setOfferedServices] = useState<ServiceItem[]>(defaultOfferedServices);
+  const activeTeacher = teachers[teacherIndex];
+  const [offeredServices, setOfferedServices] = useState<ServiceItem[]>([]);
+  const [heroImage, setHeroImage] = useState("");
   const offeredServicesTrackRef = useRef<HTMLDivElement>(null);
   const testimonialGridRef = useRef<HTMLDivElement>(null);
 
@@ -499,7 +430,7 @@ export default function Home() {
           setTeacherIndex((current) => Math.min(current, data.teachers!.length - 1));
         }
       } catch {
-        setTeachers(defaultTeachers);
+        setTeachers([]);
       }
     };
 
@@ -515,11 +446,27 @@ export default function Home() {
           setOfferedServices(data.services);
         }
       } catch {
-        setOfferedServices(defaultOfferedServices);
+        setOfferedServices([]);
       }
     };
 
     void loadServices();
+  }, []);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/settings");
+        const data = (await response.json()) as { heroImage?: string };
+        if (response.ok && data.heroImage) {
+          setHeroImage(data.heroImage);
+        }
+      } catch {
+        /* keep hero background as the plain gradient */
+      }
+    };
+
+    void loadSettings();
   }, []);
 
   useEffect(() => {
@@ -640,7 +587,7 @@ export default function Home() {
     <main>
       <header className="site-header" ref={headerRef}>
         <Link className="brand" href="/">
-          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
+          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} priority />
         </Link>
 
         <button
@@ -755,7 +702,16 @@ export default function Home() {
       </header>
 
       <section className="hero" id="home">
-        <div className="hero-bg" />
+        <div className="hero-bg">
+          {heroImage && (
+            <div
+              className="hero-bg-image"
+              style={{
+                backgroundImage: `url("${heroImage}"), linear-gradient(90deg, #ffffff, #f8faf8 42%, #ded8cf 100%)`,
+              }}
+            />
+          )}
+        </div>
         <div className="hero-content">
           <TypewriterText
             as="p"
@@ -818,11 +774,7 @@ export default function Home() {
               style={{ transitionDelay: `${(index % 4) * 130}ms` }}
               key={service.id}
             >
-              <div
-                className="offered-service-photo"
-                style={{ backgroundImage: `url("${service.photo}")` }}
-                aria-hidden="true"
-              />
+              <ServicePhoto photo={service.photo} alt={service.title} className="offered-service-photo" />
               <div className="offered-service-overlay">
                 <h3>{service.title}</h3>
                 <p>{service.description}</p>
@@ -850,38 +802,43 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="teachers-section" id="Бариачид">
-        <article className="teachers panel reveal">
-          <p className="teachers-eyebrow">Мэргэжлийн баг</p>
+      {activeTeacher && (
+        <section className="teachers-section" id="Бариачид">
+          <article className="teachers panel reveal">
+            <p className="teachers-eyebrow">Мэргэжлийн баг</p>
 
-          <div className="teacher-slide">
-            <div className="teacher-info" key={`info-${teacherIndex}`}>
-              <h3 className="teacher-role">{activeTeacher.role}</h3>
-              <ul className="teacher-points">
-                <li>{activeTeacher.years}+ жил туршлагатай</li>
-              </ul>
+            <div className="teacher-slide">
+              <div className="teacher-info" key={`info-${teacherIndex}`}>
+                <h3 className="teacher-role">{activeTeacher.role}</h3>
+                <ul className="teacher-points">
+                  <li>{activeTeacher.years}+ жил туршлагатай</li>
+                </ul>
+              </div>
+
+              <div className="teacher-photo-wrap" key={`photo-${teacherIndex}`}>
+                <TeacherPhoto
+                  photo={activeTeacher.photo}
+                  alt={activeTeacher.name}
+                  initials={activeTeacher.initials}
+                  className="teacher-photo"
+                  width={320}
+                  height={420}
+                />
+                <span className="teacher-badge">{activeTeacher.name}</span>
+              </div>
             </div>
 
-            <div className="teacher-photo-wrap" key={`photo-${teacherIndex}`}>
-              {activeTeacher.photo ? (
-                <Image className="teacher-photo" src={activeTeacher.photo} alt={activeTeacher.name} width={320} height={420} />
-              ) : (
-                <div className="teacher-photo fallback" aria-hidden="true">{activeTeacher.initials}</div>
-              )}
-              <span className="teacher-badge">{activeTeacher.name}</span>
+            <div className="teacher-nav">
+              <button type="button" aria-label="Өмнөх багш" onClick={showPrevTeacher}>‹</button>
+              <button type="button" className="next" aria-label="Дараагийн багш" onClick={showNextTeacher}>›</button>
+              <span className="teacher-count">{teacherIndex + 1} / {teachers.length}</span>
+              <div className="teacher-progress">
+                <span style={{ width: `${((teacherIndex + 1) / teachers.length) * 100}%` }} />
+              </div>
             </div>
-          </div>
-
-          <div className="teacher-nav">
-            <button type="button" aria-label="Өмнөх багш" onClick={showPrevTeacher}>‹</button>
-            <button type="button" className="next" aria-label="Дараагийн багш" onClick={showNextTeacher}>›</button>
-            <span className="teacher-count">{teacherIndex + 1} / {teachers.length}</span>
-            <div className="teacher-progress">
-              <span style={{ width: `${((teacherIndex + 1) / teachers.length) * 100}%` }} />
-            </div>
-          </div>
-        </article>
-      </section>
+          </article>
+        </section>
+      )}
 
       <section className="testimonial-section">
         <div className="section-title reveal">

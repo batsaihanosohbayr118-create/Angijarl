@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import TypewriterText from "../components/TypewriterText";
+import { attachScrollReveal } from "../components/scrollReveal";
 
 const navItems = ["Нүүр", "Бидний тухай", "Үйлчилгээ", "Бариачид", "Цаг захиалах"];
 
@@ -197,11 +198,15 @@ export default function About() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    return attachScrollReveal();
+  }, []);
+
   return (
     <main>
       <header className="site-header" ref={headerRef}>
         <Link className="brand" href="/">
-          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} />
+          <Image className="brand-logo" src="/logo.jpg" alt="АНГИЖРАЛ бариа заслын сургалтын төв" width={120} height={40} priority />
         </Link>
 
         <button
@@ -327,7 +332,7 @@ export default function About() {
 
       <section className="about-story">
         <div
-          className="photo about-story-photo"
+          className="photo about-story-photo reveal"
           role="img"
           aria-label="АНГИЖРАЛ сургалтын төвийн түүх"
           style={{
@@ -335,7 +340,7 @@ export default function About() {
               'url("https://images.pexels.com/photos/5240544/pexels-photo-5240544.jpeg?auto=compress&cs=tinysrgb&w=1000")'
           }}
         />
-        <div className="about-story-copy">
+        <div className="about-story-copy reveal" style={{ transitionDelay: "140ms" }}>
           <h2>Бидний түүх</h2>
           <p>
             Клиникийн болон эмчилгээний салбарт олон жил ажилласан мэргэжилтнүүдийн
@@ -352,15 +357,15 @@ export default function About() {
       </section>
 
       <section className="why-section">
-        <div className="section-title">
+        <div className="section-title reveal">
           <span />
           <h2>Эрхэм зорилго ба үнэт зүйлс</h2>
           <span />
         </div>
 
         <div className="about-mission-grid">
-          {missionCards.map(([title, body]) => (
-            <article className="about-mission-card" key={title}>
+          {missionCards.map(([title, body], index) => (
+            <article className="about-mission-card reveal" style={{ transitionDelay: `${index * 140}ms` }} key={title}>
               <h3>{title}</h3>
               <p>{body}</p>
             </article>
@@ -368,8 +373,8 @@ export default function About() {
         </div>
 
         <div className="why-stats">
-          {stats.map(([value, label]) => (
-            <div className="why-stat" key={label}>
+          {stats.map(([value, label], index) => (
+            <div className="why-stat reveal" style={{ transitionDelay: `${index * 120}ms` }} key={label}>
               <strong>{value}</strong>
               <span>{label}</span>
             </div>
@@ -377,7 +382,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="about-cta">
+      <section className="about-cta reveal">
         <h2>Эрүүл, тайван амьдралаа өнөөдрөөс эхлүүл</h2>
         <p>Манай үйлчилгээнүүдтэй танилцаад, өөрт тохирсныг сонгоорой.</p>
         <a className="primary-button" href="/booking">
