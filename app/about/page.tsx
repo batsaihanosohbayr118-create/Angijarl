@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import TypewriterText from "../components/TypewriterText";
 
 const navItems = ["Нүүр", "Бидний тухай", "Үйлчилгээ", "Бариачид", "Цаг захиалах"];
 
@@ -315,12 +316,13 @@ export default function About() {
       </header>
 
       <section className="about-hero about-hero--about">
-        <h1>Бидний тухай</h1>
-        <p>
-          АНГИЖРАЛ Бариа заслын төв нь мэргэжлийн бариа засал, массажийн үйлчилгээг
-          өндөр стандартаар үзүүлэх зорилготойгоор байгуулагдсан бөгөөд туршлагатай
-          мэргэжилтнүүдийн тусламжтайгаар үйлчлүүлэгчдийн эрүүл мэндийг сэргээхэд анхаардаг.
-        </p>
+        <TypewriterText as="h1" text="Бидний тухай" speed={45} startDelay={200} />
+        <TypewriterText
+          as="p"
+          text="АНГИЖРАЛ Бариа заслын төв нь мэргэжлийн бариа засал, массажийн үйлчилгээг өндөр стандартаар үзүүлэх зорилготойгоор байгуулагдсан бөгөөд туршлагатай мэргэжилтнүүдийн тусламжтайгаар үйлчлүүлэгчдийн эрүүл мэндийг сэргээхэд анхаардаг."
+          speed={14}
+          startDelay={900}
+        />
       </section>
 
       <section className="about-story">
