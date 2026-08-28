@@ -491,6 +491,27 @@ function attachAutoCarousel(track: HTMLDivElement, cardSelector: string, maxWidt
   };
 }
 
+function attachScrollReveal() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return () => {};
+
+  const items = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+  if (items.length === 0) return () => {};
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in-view");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
+  );
+
+  items.forEach((item) => observer.observe(item));
+  return () => observer.disconnect();
+}
+
 export default function Home() {
   const router = useRouter();
   const [teachers, setTeachers] = useState<Teacher[]>(defaultTeachers);
@@ -568,6 +589,10 @@ export default function Home() {
     if (!track) return;
     return attachAutoCarousel(track, ".testimonial-card", 720);
   }, [userTestimonials]);
+
+  useEffect(() => {
+    return attachScrollReveal();
+  }, [offeredServices, userTestimonials, teachers]);
 
   const handleLogout = () => {
     window.localStorage.removeItem("angijral_session");
@@ -803,19 +828,19 @@ export default function Home() {
       </section>
 
       <section className="why-section" id="Яагаад бид">
-        <div className="section-title">
+        <div className="section-title reveal">
           <span />
           <h2>Яагаад АНГИЖРАЛ-ыг сонгох вэ?</h2>
           <span />
         </div>
-        <p className="why-lead">
+        <p className="why-lead reveal">
           Бид онолын мэдлэг биш, шууд бодит үр дүнд тулгуурласан үйлчилгээ үзүүлдэг.
           Иймээс үйлчлүүлэгчид маань бидэнд дахин дахин итгэж хандсаар ирсэн.
         </p>
 
         <div className="why-grid">
-          {reasons.map(([icon, title, body]) => (
-            <article className="why-card" key={title}>
+          {reasons.map(([icon, title, body], index) => (
+            <article className="why-card reveal" style={{ transitionDelay: `${index * 90}ms` }} key={title}>
               <span>
                 <WhyIcon type={icon} />
               </span>
@@ -826,8 +851,8 @@ export default function Home() {
         </div>
 
         <div className="why-stats">
-          {stats.map(([value, label]) => (
-            <div className="why-stat" key={label}>
+          {stats.map(([value, label], index) => (
+            <div className="why-stat reveal" style={{ transitionDelay: `${index * 90}ms` }} key={label}>
               <CountUpStat value={value} />
               <span>{label}</span>
             </div>
@@ -836,15 +861,19 @@ export default function Home() {
       </section>
 
       <section className="offered-services-section">
-        <div className="section-title">
+        <div className="section-title reveal">
           <span />
           <h2>Санал болгох үйлчилгээ</h2>
           <span />
         </div>
 
         <div className="offered-services-grid" ref={offeredServicesTrackRef}>
-          {offeredServices.map((service) => (
-            <article className="offered-service-card" key={service.id}>
+          {offeredServices.map((service, index) => (
+            <article
+              className="offered-service-card reveal"
+              style={{ transitionDelay: `${(index % 4) * 90}ms` }}
+              key={service.id}
+            >
               <div
                 className="offered-service-photo"
                 style={{ backgroundImage: `url("${service.photo}")` }}
@@ -860,7 +889,7 @@ export default function Home() {
       </section>
 
       <section className="partners-section">
-        <div className="section-title">
+        <div className="section-title reveal">
           <span />
           <h2>Бидний үйлчилгээ үзүүлэгч байгууллагууд</h2>
           <span />
@@ -878,7 +907,7 @@ export default function Home() {
       </section>
 
       <section className="teachers-section" id="Бариачид">
-        <article className="teachers panel">
+        <article className="teachers panel reveal">
           <p className="teachers-eyebrow">Мэргэжлийн баг</p>
 
           <div className="teacher-slide">
@@ -911,7 +940,7 @@ export default function Home() {
       </section>
 
       <section className="testimonial-section">
-        <div className="section-title">
+        <div className="section-title reveal">
           <span />
           <h2>Хэрэглэгчдийн сэтгэгдэл</h2>
           <span />
@@ -920,8 +949,12 @@ export default function Home() {
         <div className="testimonial-content">
           {(() => {
             const allTestimonials = [...userTestimonials, ...defaultTestimonials].slice(0, 6);
-            const renderCard = (testimonial: Testimonial, key: string) => (
-              <article className="testimonial-card" key={key}>
+            const renderCard = (testimonial: Testimonial, key: string, reveal = false, index = 0) => (
+              <article
+                className={`testimonial-card${reveal ? " reveal" : ""}`}
+                style={reveal ? { transitionDelay: `${index * 90}ms` } : undefined}
+                key={key}
+              >
                 <span className="testimonial-quote-mark" aria-hidden="true">“</span>
                 <blockquote>{testimonial.message}</blockquote>
                 <div className="testimonial-footer">
@@ -950,7 +983,7 @@ export default function Home() {
 
             return (
               <div className="testimonial-grid" ref={testimonialGridRef}>
-                {allTestimonials.map((testimonial) => renderCard(testimonial, testimonial.id))}
+                {allTestimonials.map((testimonial, index) => renderCard(testimonial, testimonial.id, true, index))}
               </div>
             );
           })()}
@@ -961,7 +994,7 @@ export default function Home() {
       </section>
 
       <section className="faq-section">
-        <div className="section-title">
+        <div className="section-title reveal">
           <span />
           <h2>Түгээмэл асуулт хариулт</h2>
           <span />
@@ -977,7 +1010,11 @@ export default function Home() {
                   const [question, answer] = faqs[index];
                   const isOpen = openFaqs.has(index);
                   return (
-                    <div className={`faq-item${isOpen ? " open" : ""}`} key={question}>
+                    <div
+                      className={`faq-item reveal${isOpen ? " open" : ""}`}
+                      style={{ transitionDelay: `${i * 80}ms` }}
+                      key={question}
+                    >
                       <button
                         type="button"
                         className="faq-question"
@@ -1000,7 +1037,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="callback-band">
+      <section className="callback-band reveal">
         <p className="callback-text">
           Танд манай үйлчилгээтэй холбоотой асуулт эсвэл санал хүсэлт байгаа бол
           бидэнд утасны дугаараа үлдээгээрэй. Бид тантай холбогдох болно
