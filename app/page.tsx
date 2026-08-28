@@ -840,7 +840,7 @@ export default function Home() {
 
         <div className="why-grid">
           {reasons.map(([icon, title, body], index) => (
-            <article className="why-card reveal" style={{ transitionDelay: `${index * 90}ms` }} key={title}>
+            <article className="why-card reveal" style={{ transitionDelay: `${index * 140}ms` }} key={title}>
               <span>
                 <WhyIcon type={icon} />
               </span>
@@ -852,7 +852,7 @@ export default function Home() {
 
         <div className="why-stats">
           {stats.map(([value, label], index) => (
-            <div className="why-stat reveal" style={{ transitionDelay: `${index * 90}ms` }} key={label}>
+            <div className="why-stat reveal" style={{ transitionDelay: `${index * 120}ms` }} key={label}>
               <CountUpStat value={value} />
               <span>{label}</span>
             </div>
@@ -871,7 +871,7 @@ export default function Home() {
           {offeredServices.map((service, index) => (
             <article
               className="offered-service-card reveal"
-              style={{ transitionDelay: `${(index % 4) * 90}ms` }}
+              style={{ transitionDelay: `${(index % 4) * 130}ms` }}
               key={service.id}
             >
               <div
@@ -952,7 +952,7 @@ export default function Home() {
             const renderCard = (testimonial: Testimonial, key: string, reveal = false, index = 0) => (
               <article
                 className={`testimonial-card${reveal ? " reveal" : ""}`}
-                style={reveal ? { transitionDelay: `${index * 90}ms` } : undefined}
+                style={reveal ? { transitionDelay: `${index * 130}ms` } : undefined}
                 key={key}
               >
                 <span className="testimonial-quote-mark" aria-hidden="true">“</span>
@@ -1012,7 +1012,7 @@ export default function Home() {
                   return (
                     <div
                       className={`faq-item reveal${isOpen ? " open" : ""}`}
-                      style={{ transitionDelay: `${i * 80}ms` }}
+                      style={{ transitionDelay: `${i * 110}ms` }}
                       key={question}
                     >
                       <button
