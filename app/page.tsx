@@ -909,14 +909,14 @@ export default function Home() {
           <p className="teachers-eyebrow">Мэргэжлийн баг</p>
 
           <div className="teacher-slide">
-            <div className="teacher-info">
+            <div className="teacher-info" key={`info-${teacherIndex}`}>
               <h3 className="teacher-role">{activeTeacher.role}</h3>
               <ul className="teacher-points">
                 <li>{activeTeacher.years}+ жил туршлагатай</li>
               </ul>
             </div>
 
-            <div className="teacher-photo-wrap" key={teacherIndex}>
+            <div className="teacher-photo-wrap" key={`photo-${teacherIndex}`}>
               {activeTeacher.photo ? (
                 <Image className="teacher-photo" src={activeTeacher.photo} alt={activeTeacher.name} width={320} height={420} />
               ) : (
