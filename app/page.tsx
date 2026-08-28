@@ -386,6 +386,61 @@ function CountUpStat({ value }: { value: string }) {
   return <strong ref={ref}>{display}</strong>;
 }
 
+function TypewriterText({
+  text,
+  speed = 32,
+  startDelay = 0,
+  as: Tag = "span",
+  className,
+}: {
+  text: string;
+  speed?: number;
+  startDelay?: number;
+  as?: "p" | "h1" | "span";
+  className?: string;
+}) {
+  const [count, setCount] = useState(0);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCount(text.length);
+      setDone(true);
+      return;
+    }
+
+    let i = 0;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    setCount(0);
+    setDone(false);
+
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => {
+        i += 1;
+        setCount(i);
+        if (i >= text.length) {
+          if (interval) clearInterval(interval);
+          setDone(true);
+        }
+      }, speed);
+    }, startDelay);
+
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, [text, speed, startDelay]);
+
+  return (
+    <Tag className={`typewriter${done ? " typewriter-done" : ""}${className ? ` ${className}` : ""}`} aria-label={text}>
+      <span aria-hidden="true">
+        {text.slice(0, count)}
+        <span className="typewriter-cursor" />
+      </span>
+    </Tag>
+  );
+}
+
 function attachAutoCarousel(track: HTMLDivElement, cardSelector: string, maxWidth: number) {
   const mobileQuery = window.matchMedia(`(max-width: ${maxWidth}px)`);
   let timer: ReturnType<typeof setInterval> | null = null;
@@ -733,8 +788,14 @@ export default function Home() {
       <section className="hero" id="home">
         <div className="hero-bg" />
         <div className="hero-content">
-          <p className="eyebrow">Эрүүл бие • Тайван сэтгэл • Идэвхтэй амьдрал</p>
-          <h1>Хөдөлгөөнөөр эрүүл амьдрал</h1>
+          <TypewriterText
+            as="p"
+            className="eyebrow"
+            text="Эрүүл бие • Тайван сэтгэл • Идэвхтэй амьдрал"
+            speed={26}
+            startDelay={300}
+          />
+          <TypewriterText as="h1" text="Хөдөлгөөнөөр эрүүл амьдрал" speed={45} startDelay={1500} />
           <div className="hero-actions">
             <a className="primary-button" href="#contact">Холбоо барих <span>↗</span></a>
           </div>
