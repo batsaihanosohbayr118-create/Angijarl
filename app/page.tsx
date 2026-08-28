@@ -500,9 +500,7 @@ function attachScrollReveal() {
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("in-view");
-        observer.unobserve(entry.target);
+        entry.target.classList.toggle("in-view", entry.isIntersecting);
       });
     },
     { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
