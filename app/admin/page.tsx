@@ -75,7 +75,7 @@ interface Coupon {
   createdAt: string;
 }
 
-type TabKey = "overview" | "users" | "bookings" | "teachers" | "services" | "coupons";
+type TabKey = "overview" | "users" | "bookings" | "teachers" | "services" | "coupons" | "appearance";
 
 const pendingSessionSnapshot = "__pending__";
 
@@ -203,6 +203,14 @@ function Icon({ name }: { name: string }) {
       return (
         <svg {...common}>
           <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case "appearance":
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.6" />
+          <circle cx="9" cy="10" r="1.8" stroke="currentColor" strokeWidth="1.6" />
+          <path d="m6 17 4.2-4.6a1.5 1.5 0 0 1 2.1-.1L14 14l1.6-1.8a1.5 1.5 0 0 1 2.2 0L20 14.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
     default:
@@ -1161,6 +1169,7 @@ export default function AdminPage() {
     { key: "teachers", label: "Бариачид", icon: "users" },
     { key: "services", label: "Үйлчилгээ", icon: "services" },
     { key: "coupons", label: "Купон", icon: "coupons" },
+    { key: "appearance", label: "Нүүр хуудас", icon: "appearance" },
   ];
 
   return (
@@ -1235,6 +1244,7 @@ export default function AdminPage() {
               {tab === "teachers" && "Бариачид"}
               {tab === "services" && "Үйлчилгээ"}
               {tab === "coupons" && "Купон"}
+              {tab === "appearance" && "Нүүр хуудас"}
             </h1>
           </div>
         </div>
@@ -1249,46 +1259,6 @@ export default function AdminPage() {
               <StatCard icon="services" value={services.length} label="Идэвхтэй үйлчилгээ" />
               <StatCard icon="coupons" value={coupons.length} label="Купон" />
             </div>
-
-            <section className="admin-panel">
-              <div className="admin-panel-head">
-                <h2>Нүүр хуудасны зураг</h2>
-              </div>
-
-              <form className="admin-inline-form" onSubmit={submitHeroImage}>
-                <div className="admin-form-grid">
-                  <div className="form-field admin-form-field-wide">
-                    <label>Зургийн холбоос (URL)</label>
-                    <input
-                      type="text"
-                      value={heroImageDraft}
-                      onChange={(event) => setHeroImageDraft(event.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
-                </div>
-
-                {heroImageDraft && (
-                  <div
-                    className="admin-hero-preview"
-                    style={{ backgroundImage: `url("${heroImageDraft}")` }}
-                    aria-hidden="true"
-                  />
-                )}
-
-                {heroImageMessage && (
-                  <p className={heroImageMessage.type === "error" ? "form-error" : "form-success"}>
-                    {heroImageMessage.text}
-                  </p>
-                )}
-
-                <div className="admin-form-actions">
-                  <button type="submit" className="admin-primary-btn" disabled={heroImageSaving}>
-                    {heroImageSaving ? "Хадгалж байна..." : "Хадгалах"}
-                  </button>
-                </div>
-              </form>
-            </section>
 
             <section className="admin-panel">
               <div className="admin-panel-head">
@@ -2018,6 +1988,48 @@ export default function AdminPage() {
               )}
               </>
             )}
+          </section>
+        )}
+
+        {tab === "appearance" && (
+          <section className="admin-panel">
+            <div className="admin-panel-head">
+              <h2>Нүүр хуудасны зураг</h2>
+            </div>
+
+            <form className="admin-inline-form" onSubmit={submitHeroImage}>
+              <div className="admin-form-grid">
+                <div className="form-field admin-form-field-wide">
+                  <label>Зургийн холбоос (URL)</label>
+                  <input
+                    type="text"
+                    value={heroImageDraft}
+                    onChange={(event) => setHeroImageDraft(event.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              {heroImageDraft && (
+                <div
+                  className="admin-hero-preview"
+                  style={{ backgroundImage: `url("${heroImageDraft}")` }}
+                  aria-hidden="true"
+                />
+              )}
+
+              {heroImageMessage && (
+                <p className={heroImageMessage.type === "error" ? "form-error" : "form-success"}>
+                  {heroImageMessage.text}
+                </p>
+              )}
+
+              <div className="admin-form-actions">
+                <button type="submit" className="admin-primary-btn" disabled={heroImageSaving}>
+                  {heroImageSaving ? "Хадгалж байна..." : "Хадгалах"}
+                </button>
+              </div>
+            </form>
           </section>
         )}
       </div>
