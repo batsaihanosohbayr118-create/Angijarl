@@ -573,6 +573,27 @@ export default function BookingPage() {
               </a>
             )
           )}
+          {session && (
+            <div className="nav-profile">
+              <div className="nav-profile-info">
+                <span className="profile-avatar" aria-hidden="true">
+                  {session.name.trim().charAt(0).toUpperCase() || "Х"}
+                </span>
+                <div>
+                  <strong>{session.name}</strong>
+                  <span>{session.role === "admin" ? "Админ эрх" : "Хэрэглэгч"}</span>
+                </div>
+              </div>
+              {session.role === "admin" && (
+                <a href="/admin" onClick={() => setMobileMenuOpen(false)}>
+                  Админ самбар
+                </a>
+              )}
+              <button type="button" className="nav-profile-logout" onClick={handleLogout}>
+                Гарах
+              </button>
+            </div>
+          )}
         </nav>
 
         {session ? (
