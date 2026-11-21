@@ -1,8 +1,57 @@
 import { sql } from "./client";
-import { adminPassword, seedServices, seedTeachers } from "./seed";
-import { hashPassword } from "./utils";
+import { seedServices, seedTeachers } from "./seed";
+import { hashPassword, verifyPassword } from "./utils";
 
 let schemaReady: Promise<void> | null = null;
+
+/** .env-ээр удирдагддаг үндсэн админ бүртгэлийн ID (өмнөх seed-ийн ID-г хадгална). */
+const ENV_ADMIN_ID = "admin-osgoo";
+
+/**
+ * Үндсэн админы нэр, нууц үгийг .env-ийн ADMIN_USERNAME / ADMIN_PASSWORD-тэй тааруулна.
+ * Сервер асах бүрд ажиллана — .env-д нууц үгээ сольж серверээ дахин асаахад шинэ нууц үг хүчинтэй болно.
+ */
+async function syncEnvAdmin() {
+  const username = process.env.ADMIN_USERNAME?.trim();
+  const password = process.env.ADMIN_PASSWORD ?? "";
+
+  if (!username || !password) {
+    console.warn("ADMIN_USERNAME / ADMIN_PASSWORD .env-д тохируулаагүй тул үндсэн админ бүртгэлийг шинэчилсэнгүй.");
+    return;
+  }
+  if (password.length < 8) {
+    console.warn("ADMIN_PASSWORD хамгийн багадаа 8 тэмдэгт байх ёстой — үндсэн админ бүртгэлийг шинэчилсэнгүй.");
+    return;
+  }
+
+  const rows = (await sql`SELECT phone, password_hash, password_salt FROM users WHERE id = ${ENV_ADMIN_ID}`) as {
+    phone: string;
+    password_hash: string;
+    password_salt: string;
+  }[];
+
+  if (rows.length === 0) {
+    const created = hashPassword(password);
+    await sql`
+      INSERT INTO users (id, name, phone, role, password_hash, password_salt, joined_at)
+      VALUES (${ENV_ADMIN_ID}, ${username}, ${username}, 'admin', ${created.hash}, ${created.salt}, ${new Date().toISOString().slice(0, 10)})
+    `;
+    return;
+  }
+
+  const current = rows[0];
+  const passwordMatches = verifyPassword(password, current.password_hash, current.password_salt);
+  if (current.phone === username && passwordMatches) return;
+
+  const next = passwordMatches
+    ? { hash: current.password_hash, salt: current.password_salt }
+    : hashPassword(password);
+  await sql`
+    UPDATE users
+    SET phone = ${username}, name = ${username}, role = 'admin', password_hash = ${next.hash}, password_salt = ${next.salt}
+    WHERE id = ${ENV_ADMIN_ID}
+  `;
+}
 
 export async function ensureSchema() {
   if (!schemaReady) {
@@ -97,14 +146,7 @@ export async function ensureSchema() {
         )
       `;
 
-      const [{ count: userCount }] = (await sql`SELECT COUNT(*)::int AS count FROM users`) as { count: number }[];
-      if (userCount === 0) {
-        const adminHash = hashPassword(adminPassword);
-        await sql`
-          INSERT INTO users (id, name, phone, role, password_hash, password_salt, joined_at)
-          VALUES ('admin-osgoo', 'Osgoo', 'Osgoo', 'admin', ${adminHash.hash}, ${adminHash.salt}, '2026-01-14')
-        `;
-      }
+      await syncEnvAdmin();
 
       const [{ count: teacherCount }] = (await sql`SELECT COUNT(*)::int AS count FROM teachers`) as {
         count: number;

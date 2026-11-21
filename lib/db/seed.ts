@@ -1,7 +1,5 @@
 import type { DbService, DbTeacher } from "./types";
 
-export const adminPassword = "Osohoo12345678";
-
 export const defaultTeacherPhotos = [
   "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=700",
   "https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=700",
