@@ -12,8 +12,6 @@ export const defaultTeacherPhotos = [
 export const defaultServicePhoto =
   "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900";
 
-export const defaultHeroImage = "/hero.jpg";
-
 export const seedServices: DbService[] = [
   {
     id: "s1",

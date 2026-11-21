@@ -17,7 +17,6 @@ export default function Home() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [offeredServices, setOfferedServices] = useState<ServiceItem[]>([]);
   const [userTestimonials, setUserTestimonials] = useState<Testimonial[]>([]);
-  const [heroImage, setHeroImage] = useState("");
 
   useEffect(() => {
     const loadTestimonials = async () => {
@@ -54,22 +53,9 @@ export default function Home() {
       }
     };
 
-    const loadSettings = async () => {
-      try {
-        const response = await fetch("/api/settings");
-        const data = (await response.json()) as { heroImage?: string };
-        if (response.ok && data.heroImage) {
-          setHeroImage(data.heroImage);
-        }
-      } catch {
-        /* keep hero background as the plain gradient */
-      }
-    };
-
     void loadTestimonials();
     void loadTeachers();
     void loadServices();
-    void loadSettings();
   }, []);
 
   /* Өгөгдөл ачаалагдсаны дараа шинэ .reveal элементүүдийг дахин холбоно */
@@ -80,7 +66,7 @@ export default function Home() {
   return (
     <main>
       <SiteHeader />
-      <HeroSection heroImage={heroImage} />
+      <HeroSection />
       <WhySection />
       <OfferedServicesSection services={offeredServices} />
       <PartnersSection />

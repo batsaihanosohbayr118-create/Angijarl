@@ -9,4 +9,3 @@ export * from "./db/teachers";
 export * from "./db/services";
 export * from "./db/coupons";
 export * from "./db/testimonials";
-export * from "./db/settings";

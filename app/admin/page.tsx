@@ -9,7 +9,6 @@ import BookingsTab from "./_components/BookingsTab";
 import TeachersTab from "./_components/TeachersTab";
 import ServicesTab from "./_components/ServicesTab";
 import CouponsTab from "./_components/CouponsTab";
-import AppearanceTab from "./_components/AppearanceTab";
 import {
   getAdminSessionSnapshot,
   parseAdminSession,
@@ -56,7 +55,6 @@ export default function AdminPage() {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [heroImageDraft, setHeroImageDraft] = useState("");
 
   /* auth guard */
   useEffect(() => {
@@ -74,20 +72,6 @@ export default function AdminPage() {
     void fetchList<Teacher>("/api/admin/teachers", "teachers").then(setTeachers);
     void fetchList<ServiceItem>("/api/admin/services", "services").then(setServices);
     void fetchList<Coupon>("/api/admin/coupons", "coupons").then(setCoupons);
-
-    const loadSettings = async () => {
-      try {
-        const response = await fetch("/api/admin/settings");
-        expireSessionOnUnauthorized(response);
-        const data = (await response.json()) as { heroImage?: string };
-        if (response.ok && data.heroImage) {
-          setHeroImageDraft(data.heroImage);
-        }
-      } catch {
-        /* leave the field empty */
-      }
-    };
-    void loadSettings();
   }, [isAdmin]);
 
   const handleLogout = () => {
@@ -135,9 +119,6 @@ export default function AdminPage() {
         {tab === "teachers" && <TeachersTab teachers={teachers} setTeachers={setTeachers} services={services} />}
         {tab === "services" && <ServicesTab services={services} setServices={setServices} />}
         {tab === "coupons" && <CouponsTab coupons={coupons} setCoupons={setCoupons} />}
-        {tab === "appearance" && (
-          <AppearanceTab heroImageDraft={heroImageDraft} setHeroImageDraft={setHeroImageDraft} />
-        )}
       </div>
     </main>
   );

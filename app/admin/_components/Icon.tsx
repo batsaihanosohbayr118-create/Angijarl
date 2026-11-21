@@ -79,14 +79,6 @@ export default function Icon({ name }: { name: string }) {
           <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       );
-    case "appearance":
-      return (
-        <svg {...common}>
-          <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.6" />
-          <circle cx="9" cy="10" r="1.8" stroke="currentColor" strokeWidth="1.6" />
-          <path d="m6 17 4.2-4.6a1.5 1.5 0 0 1 2.1-.1L14 14l1.6-1.8a1.5 1.5 0 0 1 2.2 0L20 14.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
     default:
       return null;
   }

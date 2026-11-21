@@ -4101,14 +4101,6 @@ h1 {
   background-size: cover;
 }
 
-.admin-hero-preview {
-  height: 160px;
-  border-radius: 10px;
-  background-position: center;
-  background-size: cover;
-  border: 1px solid var(--line);
-}
-
 .admin-teacher-photo {
   display: block;
   width: 100%;

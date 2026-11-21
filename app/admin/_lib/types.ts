@@ -64,4 +64,4 @@ export interface Coupon {
   createdAt: string;
 }
 
-export type TabKey = "overview" | "users" | "bookings" | "teachers" | "services" | "coupons" | "appearance";
+export type TabKey = "overview" | "users" | "bookings" | "teachers" | "services" | "coupons";

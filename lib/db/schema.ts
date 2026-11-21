@@ -87,12 +87,6 @@ export async function ensureSchema() {
           created_at TEXT NOT NULL
         )
       `;
-      await sql`
-        CREATE TABLE IF NOT EXISTS settings (
-          key TEXT PRIMARY KEY,
-          value TEXT NOT NULL
-        )
-      `;
 
       const [{ count: userCount }] = (await sql`SELECT COUNT(*)::int AS count FROM users`) as { count: number }[];
       if (userCount === 0) {

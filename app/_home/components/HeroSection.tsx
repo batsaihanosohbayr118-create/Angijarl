@@ -1,17 +1,17 @@
 import TypewriterText from "../../components/TypewriterText";
 
-export default function HeroSection({ heroImage }: { heroImage: string }) {
+const HERO_IMAGE = "/hero.jpg";
+
+export default function HeroSection() {
   return (
     <section className="hero" id="home">
       <div className="hero-bg">
-        {heroImage && (
-          <div
-            className="hero-bg-image"
-            style={{
-              backgroundImage: `url("${heroImage}"), linear-gradient(90deg, #ffffff, #f8faf8 42%, #ded8cf 100%)`,
-            }}
-          />
-        )}
+        <div
+          className="hero-bg-image"
+          style={{
+            backgroundImage: `url("${HERO_IMAGE}"), linear-gradient(90deg, #ffffff, #f8faf8 42%, #ded8cf 100%)`,
+          }}
+        />
       </div>
       <div className="hero-content">
         <TypewriterText
