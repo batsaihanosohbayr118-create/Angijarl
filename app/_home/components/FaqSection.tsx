@@ -35,7 +35,9 @@ export default function FaqSection() {
                 const isOpen = openFaqs.has(index);
                 return (
                   <div
-                    className={`faq-item reveal${isOpen ? " open" : ""}`}
+                    /* className тогтмол байх ёстой: scrollReveal-ийн нэмсэн "in-view"-ийг React дарж бичихгүйн тулд */
+                    className="faq-item reveal"
+                    data-open={isOpen || undefined}
                     style={{ transitionDelay: `${i * 110}ms` }}
                     key={question}
                   >

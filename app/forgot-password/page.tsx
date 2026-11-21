@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 function EyeIcon({ open }: { open: boolean }) {
   if (open) {
@@ -205,7 +206,7 @@ export default function ForgotPasswordPage() {
             </form>
 
             <p className="auth-switch">
-              Нууц үгээ санасан уу? <a className="form-link" href="/login">Нэвтрэх</a>
+              Нууц үгээ санасан уу? <Link className="form-link" href="/login">Нэвтрэх</Link>
             </p>
 
             {success && (

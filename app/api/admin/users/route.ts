@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { deleteUser, listUsers, updateUserRole, type Role } from "../../../../lib/angijralDb";
+import { requireAdmin } from "../../../../lib/auth";
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const users = await listUsers();
   return NextResponse.json({ users });
 }
 
 export async function PATCH(request: Request) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = (await request.json()) as { id?: string; role?: Role };
 
@@ -26,6 +33,9 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

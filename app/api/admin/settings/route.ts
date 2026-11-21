@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteSettings, updateSiteSettings } from "../../../../lib/angijralDb";
+import { requireAdmin } from "../../../../lib/auth";
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const settings = await getSiteSettings();
   return NextResponse.json(settings);
 }
 
 export async function PATCH(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = (await req.json()) as { heroImage?: string };
     const result = await updateSiteSettings(body);

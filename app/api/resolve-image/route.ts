@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
+/* Pinterest гэх мэт хуудаснаас зураг хайх нь ~1 сек болдог тул амжилттай үр дүнг санах ойд хадгална */
+const resolvedCache = new Map<string, string>();
+const MAX_CACHE_ENTRIES = 500;
+
+function resolved(source: string, imageUrl: string) {
+  if (resolvedCache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = resolvedCache.keys().next().value;
+    if (oldest !== undefined) resolvedCache.delete(oldest);
+  }
+  resolvedCache.set(source, imageUrl);
+  return NextResponse.json(
+    { imageUrl },
+    { headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800" } }
+  );
+}
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
   if (!url) {
@@ -15,6 +31,11 @@ export async function GET(req: NextRequest) {
 
   if (target.protocol !== "https:" && target.protocol !== "http:") {
     return NextResponse.json({ error: "URL буруу байна" }, { status: 400 });
+  }
+
+  const cached = resolvedCache.get(target.toString());
+  if (cached) {
+    return resolved(target.toString(), cached);
   }
 
   const controller = new AbortController();
@@ -33,7 +54,7 @@ export async function GET(req: NextRequest) {
     const contentType = response.headers.get("content-type") ?? "";
 
     if (contentType.startsWith("image/")) {
-      return NextResponse.json({ imageUrl: target.toString() });
+      return resolved(target.toString(), target.toString());
     }
 
     if (!contentType.includes("text/html")) {
@@ -51,7 +72,7 @@ export async function GET(req: NextRequest) {
     }
 
     const imageUrl = new URL(match[1], target).toString();
-    return NextResponse.json({ imageUrl });
+    return resolved(target.toString(), imageUrl);
   } catch {
     return NextResponse.json({ error: "Холбогдоход алдаа гарлаа" }, { status: 502 });
   } finally {

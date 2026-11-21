@@ -44,6 +44,7 @@ export default function SiteHeader() {
   useClickOutside(headerRef, mobileMenuOpen, closeMobileMenu);
 
   const handleLogout = () => {
+    void fetch("/api/logout", { method: "POST" }).catch(() => {});
     window.localStorage.removeItem("angijral_session");
     window.dispatchEvent(new Event("angijral-session-change"));
     setProfileOpen(false);
@@ -128,9 +129,9 @@ export default function SiteHeader() {
               </div>
             </div>
             {session.role === "admin" && (
-              <a href="/admin" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
                 Админ самбар
-              </a>
+              </Link>
             )}
             <button type="button" className="nav-profile-logout" onClick={handleLogout}>
               Гарах
@@ -162,9 +163,9 @@ export default function SiteHeader() {
                 <span>{roleLabel}</span>
               </div>
               {session.role === "admin" && (
-                <a href="/admin" role="menuitem" onClick={() => setProfileOpen(false)}>
+                <Link href="/admin" role="menuitem" onClick={() => setProfileOpen(false)}>
                   Админ самбар
-                </a>
+                </Link>
               )}
               <button type="button" role="menuitem" className="profile-menu-logout" onClick={handleLogout}>
                 Гарах
@@ -173,13 +174,13 @@ export default function SiteHeader() {
           )}
         </div>
       ) : (
-        <a className="login-button" href="/login" aria-label="Нэвтрэх">
+        <Link className="login-button" href="/login" aria-label="Нэвтрэх">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <circle cx="12" cy="8.2" r="3.4" stroke="currentColor" strokeWidth="1.6" />
             <path d="M5 19.5c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
           </svg>
           Нэвтрэх
-        </a>
+        </Link>
       )}
     </header>
   );

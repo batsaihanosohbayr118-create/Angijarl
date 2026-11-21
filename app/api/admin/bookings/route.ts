@@ -6,15 +6,22 @@ import {
   updateBookingStatus,
   type BookingStatus,
 } from "../../../../lib/angijralDb";
+import { requireAdmin } from "../../../../lib/auth";
 
 const statuses: BookingStatus[] = ["хүлээгдэж буй", "баталгаажсан", "цуцлагдсан"];
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const bookings = await listBookings();
   return NextResponse.json({ bookings });
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { name, phone, service, specialist, preferredDate, time, note } = body ?? {};
@@ -32,6 +39,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = (await req.json()) as { id?: string; status?: BookingStatus };
 
@@ -51,6 +61,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

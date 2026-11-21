@@ -12,7 +12,7 @@ export const defaultTeacherPhotos = [
 export const defaultServicePhoto =
   "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900";
 
-export const defaultHeroImage = "https://i.pinimg.com/736x/1a/93/a8/1a93a83d8a146f771792da66af330d04.jpg";
+export const defaultHeroImage = "/hero.jpg";
 
 export const seedServices: DbService[] = [
   {

@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createTeacher, deleteTeacher, listTeachers, updateTeacher } from "../../../../lib/angijralDb";
+import { requireAdmin } from "../../../../lib/auth";
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const teachers = await listTeachers();
   return NextResponse.json({ teachers });
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { name, role, years, bio, photo, serviceIds } = body ?? {};
@@ -24,6 +31,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = (await req.json()) as {
       id?: string;
@@ -51,6 +61,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

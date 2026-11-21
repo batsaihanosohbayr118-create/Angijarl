@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 function EyeIcon({ open }: { open: boolean }) {
   if (open) {
@@ -143,7 +144,7 @@ export default function RegisterPage() {
             <p className="auth-subtext">
               Мэдээллээ бөглөж шинэ бүртгэл үүсгэнэ үү.
               <br />
-              Админ эрхээр бүртгүүлэх шаардлагагүй — <a className="form-link" href="/login">эндээс</a> шууд нэвтэрнэ үү.
+              Админ эрхээр бүртгүүлэх шаардлагагүй — <Link className="form-link" href="/login">эндээс</Link> шууд нэвтэрнэ үү.
             </p>
 
             <form className="auth-form" onSubmit={handleSubmit}>
@@ -252,7 +253,7 @@ export default function RegisterPage() {
             </form>
 
             <p className="auth-switch">
-              Бүртгэлтэй юу? <a className="form-link" href="/login">Нэвтрэх</a>
+              Бүртгэлтэй юу? <Link className="form-link" href="/login">Нэвтрэх</Link>
             </p>
           </section>
         </div>

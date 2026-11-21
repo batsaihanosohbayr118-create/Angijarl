@@ -18,10 +18,18 @@ import {
 } from "./_lib/session";
 import type { AppUser, Booking, Coupon, ServiceItem, TabKey, Teacher } from "./_lib/types";
 
+/** Сервер 401 буцаавал (cookie байхгүй/хугацаа дууссан) локал session-ийг цэвэрлэж login руу шилжүүлнэ. */
+function expireSessionOnUnauthorized(response: Response) {
+  if (response.status !== 401) return;
+  window.localStorage.removeItem("angijral_session");
+  window.dispatchEvent(new Event("angijral-session-change"));
+}
+
 /** GET хүсэлт илгээж, хариунаас `key` талбарын массивыг буцаана. Алдаа гарвал хоосон массив. */
 async function fetchList<T>(url: string, key: string): Promise<T[]> {
   try {
     const response = await fetch(url);
+    expireSessionOnUnauthorized(response);
     const data = (await response.json()) as Record<string, unknown>;
     return response.ok && Array.isArray(data[key]) ? (data[key] as T[]) : [];
   } catch {
@@ -70,6 +78,7 @@ export default function AdminPage() {
     const loadSettings = async () => {
       try {
         const response = await fetch("/api/admin/settings");
+        expireSessionOnUnauthorized(response);
         const data = (await response.json()) as { heroImage?: string };
         if (response.ok && data.heroImage) {
           setHeroImageDraft(data.heroImage);
@@ -82,6 +91,7 @@ export default function AdminPage() {
   }, [isAdmin]);
 
   const handleLogout = () => {
+    void fetch("/api/logout", { method: "POST" }).catch(() => {});
     window.localStorage.removeItem("angijral_session");
     router.push("/login");
   };

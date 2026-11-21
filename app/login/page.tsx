@@ -4,6 +4,7 @@ import Image from "next/image";
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface GoogleCredentialResponse {
   credential?: string;
@@ -333,9 +334,9 @@ export default function LoginPage() {
                   Намайг сана
                 </label>
                 {role === "user" && (
-                  <a className="form-link" href="/forgot-password">
+                  <Link className="form-link" href="/forgot-password">
                     Нууц үгээ мартсан?
-                  </a>
+                  </Link>
                 )}
               </div>
 
@@ -346,7 +347,7 @@ export default function LoginPage() {
 
             {role === "user" ? (
               <p className="auth-switch">
-                Бүртгэлгүй юу? <a className="form-link" href="/register">Бүртгүүлэх</a>
+                Бүртгэлгүй юу? <Link className="form-link" href="/register">Бүртгүүлэх</Link>
               </p>
             ) : (
               <p className="auth-switch">Админ эрхээр бүртгүүлэх шаардлагагүй, шууд нэвтэрнэ.</p>

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createBooking } from "../../../../lib/angijralDb";
+import { requireAdmin } from "../../../../lib/auth";
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { name, phone, service, specialist, preferredDate, time, note } = body ?? {};

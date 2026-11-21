@@ -5,6 +5,7 @@ import SectionTitle from "./SectionTitle";
 import { attachAutoCarousel } from "../autoCarousel";
 import { defaultTestimonials } from "../data";
 import type { Testimonial } from "../types";
+import Link from "next/link";
 
 function TestimonialCard({
   testimonial,
@@ -66,7 +67,7 @@ export default function TestimonialsSection({ userTestimonials }: { userTestimon
           </div>
         )}
         <div className="testimonial-actions">
-          <a className="primary-button" href="/feedback">Сэтгэгдэл үлдээх <span>↗</span></a>
+          <Link className="primary-button" href="/feedback">Сэтгэгдэл үлдээх <span>↗</span></Link>
         </div>
       </div>
     </section>

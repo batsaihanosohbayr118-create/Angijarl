@@ -139,6 +139,7 @@ export default function OfficeMassagePage() {
   const headerRef = useRef<HTMLElement>(null);
 
   const handleLogout = () => {
+    void fetch("/api/logout", { method: "POST" }).catch(() => {});
     window.localStorage.removeItem("angijral_session");
     window.dispatchEvent(new Event("angijral-session-change"));
     setProfileOpen(false);
@@ -262,9 +263,9 @@ export default function OfficeMassagePage() {
                 </div>
               </div>
               {session.role === "admin" && (
-                <a href="/admin" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
                   Админ самбар
-                </a>
+                </Link>
               )}
               <button type="button" className="nav-profile-logout" onClick={handleLogout}>
                 Гарах
@@ -300,9 +301,9 @@ export default function OfficeMassagePage() {
                   <span>{session.role === "admin" ? "Админ эрх" : "Хэрэглэгч"}</span>
                 </div>
                 {session.role === "admin" && (
-                  <a href="/admin" role="menuitem" onClick={() => setProfileOpen(false)}>
+                  <Link href="/admin" role="menuitem" onClick={() => setProfileOpen(false)}>
                     Админ самбар
-                  </a>
+                  </Link>
                 )}
                 <button type="button" role="menuitem" className="profile-menu-logout" onClick={handleLogout}>
                   Гарах
@@ -311,13 +312,13 @@ export default function OfficeMassagePage() {
             )}
           </div>
         ) : (
-          <a className="login-button" href="/login" aria-label="Нэвтрэх">
+          <Link className="login-button" href="/login" aria-label="Нэвтрэх">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <circle cx="12" cy="8.2" r="3.4" stroke="currentColor" strokeWidth="1.6" />
               <path d="M5 19.5c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
             Нэвтрэх
-          </a>
+          </Link>
         )}
       </header>
 
@@ -378,9 +379,9 @@ export default function OfficeMassagePage() {
       <section className="about-cta reveal">
         <h2>Оффис бариа заслаа захиалаарай</h2>
         <p>Нэг удаагийн үнэ 60,000₮. Танд тохирох цагийг сонгоод шууд захиална уу.</p>
-        <a className="primary-button" href="/booking">
+        <Link className="primary-button" href="/booking">
           Цаг захиалах <span>↗</span>
-        </a>
+        </Link>
       </section>
 
     </main>
