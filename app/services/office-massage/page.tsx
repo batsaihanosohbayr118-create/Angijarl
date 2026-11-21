@@ -337,7 +337,7 @@ export default function OfficeMassagePage() {
           className="about-story-photo reveal"
           style={{
             backgroundImage:
-              'url("https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=900")',
+              'url("/office-massage/about.jpg")',
             backgroundPosition: "center",
             backgroundSize: "cover",
           }}

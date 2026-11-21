@@ -332,7 +332,7 @@ export default function PsychologyPage() {
           className="about-story-photo reveal"
           style={{
             backgroundImage:
-              'url("https://images.pexels.com/photos/7176026/pexels-photo-7176026.jpeg?auto=compress&cs=tinysrgb&w=900")',
+              'url("/psychology/about.jpg")',
             backgroundPosition: "center",
             backgroundSize: "cover",
           }}

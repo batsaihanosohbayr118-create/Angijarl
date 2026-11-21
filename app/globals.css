@@ -765,7 +765,7 @@ h1 {
 .about-hero--office-massage {
   background:
     linear-gradient(rgba(9, 43, 89, 0.4), rgba(9, 43, 89, 0.4)),
-    url("https://images.pexels.com/photos/8901230/pexels-photo-8901230.jpeg?auto=compress&cs=tinysrgb&w=1920") center 30% / cover no-repeat;
+    url("/office-massage/office-massage.jpg") center 30% / cover no-repeat;
 }
 
 .about-hero--nutrition {
@@ -780,10 +780,16 @@ h1 {
     url("/meditation/meditation.png") center 30% / cover no-repeat;
 }
 
+.about-hero--teachers {
+  background:
+    linear-gradient(rgba(9, 43, 89, 0.4), rgba(9, 43, 89, 0.4)),
+    url("/teachers/teachers.jpg") center 30% / cover no-repeat;
+}
+
 .about-hero--psychology {
   background:
     linear-gradient(rgba(9, 43, 89, 0.4), rgba(9, 43, 89, 0.4)),
-    url("https://images.pexels.com/photos/7447253/pexels-photo-7447253.jpeg?auto=compress&cs=tinysrgb&w=1920") center 30% / cover no-repeat;
+    url("/psychology/psychology.jpg") center 30% / cover no-repeat;
 }
 
 .about-hero--about {

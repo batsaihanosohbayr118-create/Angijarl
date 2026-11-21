@@ -344,7 +344,7 @@ export default function Teachers() {
         )}
       </header>
 
-      <section className="about-hero">
+      <section className="about-hero about-hero--teachers">
         <TypewriterText as="h1" text="Бариачид" speed={55} startDelay={200} />
         <TypewriterText
           as="p"
