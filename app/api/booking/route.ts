@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createBooking, listBookings } from "../../../lib/angijralDb";
+import { priceForService } from "../../../lib/servicePrices";
+import { checkRateLimit, rateLimits } from "../../../lib/rateLimit";
 
 const RECIPIENT_EMAIL = "angijraltuv@yahoo.com";
 
@@ -72,9 +74,18 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await checkRateLimit(req, rateLimits.booking);
+  if (limited) return limited;
+
   try {
     const body = await req.json();
-    const { name, phone, service, specialist, preferredDate, time, note, servicePrice, couponCode } = body ?? {};
+    const { name, phone, service, specialist, preferredDate, time, note, couponCode } = body ?? {};
+
+    /* Үнийг хөтчөөс биш, сервер дээрх үнийн жагсаалтаас тодорхойлно */
+    const servicePrice = typeof service === "string" ? priceForService(service) : null;
+    if (servicePrice === null) {
+      return NextResponse.json({ ok: false, error: "Үйлчилгээ олдсонгүй." }, { status: 400 });
+    }
 
     const result = await createBooking({
       name,

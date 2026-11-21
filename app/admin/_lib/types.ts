@@ -64,4 +64,13 @@ export interface Coupon {
   createdAt: string;
 }
 
-export type TabKey = "overview" | "users" | "bookings" | "teachers" | "services" | "coupons";
+export interface AdminTestimonial {
+  id: string;
+  name: string;
+  message: string;
+  rating: number;
+  initials: string;
+  createdAt: string;
+}
+
+export type TabKey = "overview" | "users" | "bookings" | "teachers" | "services" | "coupons" | "testimonials";

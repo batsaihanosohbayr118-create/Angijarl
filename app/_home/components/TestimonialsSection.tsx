@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import SectionTitle from "./SectionTitle";
 import { attachAutoCarousel } from "../autoCarousel";
-import { defaultTestimonials } from "../data";
 import type { Testimonial } from "../types";
-import Link from "next/link";
+import FeedbackModal from "./FeedbackModal";
 
 function TestimonialCard({
   testimonial,
@@ -36,9 +35,20 @@ function TestimonialCard({
   );
 }
 
-export default function TestimonialsSection({ userTestimonials }: { userTestimonials: Testimonial[] }) {
+export default function TestimonialsSection({
+  userTestimonials,
+  onTestimonialAdded,
+}: {
+  userTestimonials: Testimonial[];
+  onTestimonialAdded: (testimonial: Testimonial) => void;
+}) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const allTestimonials = [...userTestimonials, ...defaultTestimonials].slice(0, 6);
+  /* Footer-ийн "Сэтгэгдэл" холбоос (/#feedback) эсвэл хуучин /feedback хаягаар орвол modal шууд нээгдэнэ */
+  const [feedbackOpen, setFeedbackOpen] = useState(
+    () => typeof window !== "undefined" && window.location.hash === "#feedback"
+  );
+  /* Бүх сэтгэгдэл DB-д хадгалагдаж, админаас удирдагдана */
+  const allTestimonials = userTestimonials.slice(0, 6);
 
   useEffect(() => {
     const track = gridRef.current;
@@ -47,7 +57,7 @@ export default function TestimonialsSection({ userTestimonials }: { userTestimon
   }, [userTestimonials]);
 
   return (
-    <section className="testimonial-section">
+    <section className="testimonial-section" id="feedback">
       <SectionTitle>Хэрэглэгчдийн сэтгэгдэл</SectionTitle>
 
       <div className="testimonial-content">
@@ -67,9 +77,22 @@ export default function TestimonialsSection({ userTestimonials }: { userTestimon
           </div>
         )}
         <div className="testimonial-actions">
-          <Link className="primary-button" href="/feedback">Сэтгэгдэл үлдээх <span>↗</span></Link>
+          <button type="button" className="primary-button" onClick={() => setFeedbackOpen(true)}>
+            Сэтгэгдэл үлдээх <span>↗</span>
+          </button>
         </div>
       </div>
+
+      <FeedbackModal
+        open={feedbackOpen}
+        onClose={() => {
+          setFeedbackOpen(false);
+          if (window.location.hash === "#feedback") {
+            window.history.replaceState(null, "", window.location.pathname + window.location.search);
+          }
+        }}
+        onSubmitted={onTestimonialAdded}
+      />
     </section>
   );
 }

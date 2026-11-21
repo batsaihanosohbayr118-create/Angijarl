@@ -41,6 +41,15 @@ function UserIcon() {
   );
 }
 
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m4 6.5 8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function PhoneIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -67,6 +76,7 @@ function LockIcon() {
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -81,7 +91,7 @@ export default function RegisterPage() {
     setError("");
     setSuccess(false);
 
-    if (!name.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!name.trim() || !email.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
       setError("Бүх талбарыг бөглөнө үү.");
       return;
     }
@@ -103,7 +113,7 @@ export default function RegisterPage() {
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, password }),
+        body: JSON.stringify({ name, email, phone, password }),
       });
       const data = (await response.json()) as { message?: string };
 
@@ -163,6 +173,26 @@ export default function RegisterPage() {
                       setSuccess(false);
                     }}
                     autoComplete="name"
+                  />
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="register-email">Имэйл хаяг</label>
+                <div className="form-input-wrap">
+                  <MailIcon />
+                  <input
+                    id="register-email"
+                    type="email"
+                    inputMode="email"
+                    placeholder="Имэйл хаягаа оруулна уу"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      setError("");
+                      setSuccess(false);
+                    }}
+                    autoComplete="email"
                   />
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import Icon from "./Icon";
+import ConfirmDialog from "./ConfirmDialog";
 import CardNav from "./CardNav";
 import { scrollCards } from "../_lib/scroll";
 import type { AppUser } from "../_lib/types";
@@ -14,6 +15,8 @@ export default function UsersTab({
   setUsers: Dispatch<SetStateAction<AppUser[]>>;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
+  /* Устгахаар сонгосон мөр — баталгаажуулах цонх нээгдэнэ */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
   const [userSearch, setUserSearch] = useState("");
 
   const filteredUsers = useMemo(() => {
@@ -123,7 +126,7 @@ export default function UsersTab({
                           type="button"
                           className="admin-icon-btn danger"
                           aria-label="Устгах"
-                          onClick={() => deleteUser(u.id)}
+                          onClick={() => setPendingDelete({ id: u.id, label: u.name })}
                         >
                           <Icon name="trash" />
                         </button>
@@ -139,6 +142,20 @@ export default function UsersTab({
           )}
         </>
       )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Хэрэглэгч устгах уу?"
+        message={
+          <>
+            <strong>{pendingDelete?.label}</strong> хэрэглэгчийн бүртгэл бүрмөсөн устгагдана. Энэ үйлдлийг буцаах боломжгүй.
+          </>
+        }
+        onConfirm={() => {
+          if (pendingDelete) void deleteUser(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }

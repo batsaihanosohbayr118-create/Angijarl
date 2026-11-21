@@ -418,6 +418,32 @@ img {
   min-width: 132px;
 }
 
+/* Энгийн хэрэглэгч нэвтэрсэн үед: нэрийн эхний үсэгтэй аватар, хажууд нь "Гарах" товч */
+.profile-chip--user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-identity {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.site-header .logout-button {
+  min-width: 0;
+  padding: 0 18px;
+  border: none;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .secondary-button {
   color: var(--green);
   background: white;
@@ -795,7 +821,7 @@ h1 {
 .about-hero--about {
   background:
     linear-gradient(rgba(9, 43, 89, 0.4), rgba(9, 43, 89, 0.4)),
-    url("https://images.pexels.com/photos/19695969/pexels-photo-19695969.jpeg?auto=compress&cs=tinysrgb&w=1920") center 30% / cover no-repeat;
+    url("/about/about.jpg") center 30% / cover no-repeat;
 }
 
 .about-story {
@@ -1028,13 +1054,13 @@ h1 {
   color: white;
   font-size: 15px;
   border-radius: 50%;
-  background: var(--green);
-  transition: transform 0.35s ease, background 0.3s ease;
+  /* Градиент үргэлж байна — hover үед өнгө ⇄ градиент солигдох нь анивчуулдаг байсан */
+  background: linear-gradient(135deg, var(--green), #397d26);
+  transition: transform 0.35s ease;
 }
 
 .why-card:hover span {
   transform: scale(1.12) rotate(-8deg);
-  background: linear-gradient(135deg, var(--green), #397d26);
 }
 
 .why-card span svg {
@@ -1218,13 +1244,17 @@ h1 {
   margin: var(--section-y) auto 0;
 }
 
+/* Flex + тогтмол өргөн: 4-өөс цөөн карт (эсвэл сүүлийн дутуу мөр) хэвтээ тэнхлэгийн дагуу голлоно */
 .offered-services-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  --cols: 4;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: var(--grid-gap);
 }
 
 .offered-service-card {
+  flex: 0 0 calc((100% - (var(--cols) - 1) * var(--grid-gap)) / var(--cols));
   position: relative;
   overflow: hidden;
   border-radius: 8px;
@@ -1273,13 +1303,16 @@ h1 {
 
 @media (max-width: 1024px) {
   .offered-services-grid {
-    grid-template-columns: repeat(2, 1fr);
+    --cols: 2;
   }
 }
 
 @media (max-width: 560px) {
   .offered-services-grid {
     display: flex;
+    flex-wrap: nowrap;
+    /* Гүйдэг карусельд голлуулбал эхний карт зүүн тийш тасардаг */
+    justify-content: flex-start;
     gap: 16px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -1296,62 +1329,6 @@ h1 {
     flex: 0 0 100%;
     scroll-snap-align: center;
   }
-}
-
-.partners-section {
-  width: min(var(--content-width), calc(100% - (var(--page-gutter) * 2)));
-  margin: var(--section-y) auto 0;
-  padding: 0;
-}
-
-.partners-marquee {
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-
-.partners-track {
-  display: flex;
-  align-items: center;
-  width: max-content;
-  gap: clamp(28px, 5vw, 64px);
-  animation: partners-scroll 28s linear infinite;
-}
-
-.partners-marquee:hover .partners-track {
-  animation-play-state: paused;
-}
-
-@keyframes partners-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .partners-track {
-    animation: none;
-  }
-}
-
-.partner-logo {
-  font-family: inherit;
-  font-size: clamp(15px, 1.6vw, 19px);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: var(--navy);
-  opacity: 0.55;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: opacity 0.25s ease, color 0.25s ease;
-}
-
-.partner-logo:hover {
-  opacity: 1;
-  color: var(--green);
 }
 
 .testimonial-section {
@@ -2236,7 +2213,6 @@ h1 {
   .courses-section,
   .why-section,
   .offered-services-section,
-  .partners-section,
   .teachers-section,
   .testimonial-section,
   .faq-section {
@@ -2847,25 +2823,8 @@ h1 {
   text-align: center;
 }
 
-.feedback-page {
-  min-height: 100vh;
-  padding: 28px var(--page-gutter) 72px;
-  background:
-    linear-gradient(180deg, rgba(245, 250, 244, 0.9), rgba(255, 255, 255, 0.96)),
-    url("https://images.pexels.com/photos/5240642/pexels-photo-5240642.jpeg?auto=compress&cs=tinysrgb&w=1400") center / cover fixed;
-}
-
-.feedback-shell {
-  display: grid;
-  grid-template-columns: minmax(300px, 0.88fr) minmax(0, 1fr);
-  gap: var(--grid-gap);
-  width: min(1060px, 100%);
-  margin: 28px auto 0;
-  align-items: start;
-}
-
-.feedback-form-panel,
-.feedback-preview {
+.feedback-form-panel {
+  position: relative;
   padding: 34px;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(222, 230, 222, 0.9);
@@ -2874,15 +2833,11 @@ h1 {
   backdrop-filter: blur(16px);
 }
 
-.feedback-form-panel h1,
-.feedback-preview h2 {
+.feedback-form-panel h2 {
   margin: 0;
   color: var(--navy);
-}
-
-.feedback-form-panel h1 {
-  font-size: clamp(30px, 4vw, 46px);
-  line-height: 1.05;
+  font-size: clamp(26px, 3.4vw, 34px);
+  line-height: 1.1;
 }
 
 .feedback-form-panel .auth-subtext {
@@ -2899,7 +2854,6 @@ h1 {
 }
 
 .feedback-form-panel input,
-.feedback-form-panel select,
 .feedback-form-panel textarea {
   width: 100%;
   min-height: 48px;
@@ -2923,11 +2877,123 @@ h1 {
 }
 
 .feedback-form-panel input:focus,
-.feedback-form-panel select:focus,
 .feedback-form-panel textarea:focus {
   background: white;
   border-color: var(--green);
   box-shadow: 0 0 0 4px rgba(76, 152, 47, 0.14);
+}
+
+/* ---------- Сэтгэгдэл үлдээх modal ---------- */
+.feedback-modal {
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  overflow: auto;
+}
+
+.feedback-modal[open] {
+  animation: feedbackModalIn 0.28s cubic-bezier(0.22, 0.61, 0.22, 1);
+}
+
+.feedback-modal::backdrop {
+  background: rgba(9, 43, 89, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+@keyframes feedbackModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.feedback-modal .feedback-form-panel {
+  background: white;
+}
+
+.feedback-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--mist);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.feedback-modal-close:hover {
+  color: var(--navy);
+  background: var(--line);
+}
+
+.feedback-modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.feedback-modal-done {
+  display: grid;
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.feedback-rating {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.feedback-stars {
+  display: flex;
+  gap: 4px;
+}
+
+.feedback-stars button {
+  padding: 0 2px;
+  color: #d9dee6;
+  font-size: 30px;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.feedback-stars button.is-on {
+  color: #e2a935;
+}
+
+.feedback-stars button:hover {
+  transform: scale(1.12);
+}
+
+.feedback-stars button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-modal[open] {
+    animation: none;
+  }
 }
 
 .feedback-form-count {
@@ -2936,66 +3002,6 @@ h1 {
   font-size: 12px;
   font-weight: 700;
   text-align: right;
-}
-
-.feedback-form-panel .rating-select {
-  appearance: none;
-  -webkit-appearance: none;
-  color: #d99a1f;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  background-image:
-    linear-gradient(135deg, #fffdf6, #fff6e0 55%, #fef0cc),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1.5L7 7.5L13 1.5' stroke='%234c982f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center, right 16px center;
-  background-size: cover, 14px 9px;
-  border: 1.5px solid #f0d38b;
-  box-shadow: 0 2px 10px rgba(217, 154, 31, 0.14);
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-}
-
-.rating-select option {
-  color: #d99a1f;
-  background: #fffdf6;
-  font-size: 16px;
-  letter-spacing: 2px;
-  padding: 8px 12px;
-}
-
-.rating-select option:hover,
-.rating-select option:focus,
-.rating-select option:checked {
-  color: #ffffff;
-  background: #e2a935;
-}
-
-.feedback-form-panel .rating-select:hover {
-  border-color: #e2b64f;
-  transform: translateY(-1px);
-}
-
-.feedback-form-panel .rating-select:focus {
-  background-color: transparent;
-  border-color: var(--green);
-  box-shadow: 0 0 0 4px rgba(76, 152, 47, 0.14), 0 2px 10px rgba(217, 154, 31, 0.18);
-}
-
-.feedback-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.feedback-preview h2 {
-  font-size: 24px;
-}
-
-.feedback-preview-list {
-  display: grid;
-  gap: 16px;
 }
 
 @media (max-width: 860px) {
@@ -3016,13 +3022,8 @@ h1 {
     padding: 36px 26px 40px;
   }
 
-  .feedback-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .feedback-form-panel,
-  .feedback-preview {
-    padding: 26px;
+  .feedback-form-panel {
+    padding: 26px 22px;
   }
 }
 
@@ -3637,6 +3638,128 @@ h1 {
   border-color: var(--muted);
 }
 
+.admin-danger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 18px;
+  min-height: 40px;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #d64532, #b3261e);
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(179, 38, 30, 0.25);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-danger-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(179, 38, 30, 0.32);
+}
+
+.admin-danger-btn:disabled,
+.admin-secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ---------- Баталгаажуулах цонх (confirm) ---------- */
+.admin-confirm {
+  width: min(420px, calc(100% - 32px));
+  padding: 0;
+  border: none;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 30px 70px rgba(9, 43, 89, 0.28);
+}
+
+.admin-confirm[open] {
+  animation: adminConfirmIn 0.22s cubic-bezier(0.22, 0.61, 0.22, 1);
+}
+
+.admin-confirm::backdrop {
+  background: rgba(9, 43, 89, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+@keyframes adminConfirmIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.admin-confirm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 28px 24px;
+  text-align: center;
+}
+
+.admin-confirm-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 14px;
+  color: var(--green);
+  background: rgba(76, 152, 47, 0.12);
+  border-radius: 50%;
+}
+
+.admin-confirm-icon.danger {
+  color: #c0392b;
+  background: rgba(214, 69, 50, 0.12);
+}
+
+.admin-confirm-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.admin-confirm-body h3 {
+  margin: 0 0 8px;
+  color: var(--navy);
+  font-size: 19px;
+}
+
+.admin-confirm-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.admin-confirm-body p strong {
+  color: var(--ink);
+}
+
+.admin-confirm-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.admin-confirm-actions button {
+  flex: 1;
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-confirm[open] {
+    animation: none;
+  }
+}
+
 /* ---------- Filter tabs ---------- */
 
 .admin-filter-tabs {
@@ -3669,6 +3792,30 @@ h1 {
 }
 
 /* ---------- Inline form ---------- */
+
+/* Сэтгэгдлийн таб */
+.admin-panel-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-rating {
+  color: #e2a935;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.admin-rating-off {
+  color: #d9dee6;
+}
+
+.admin-testimonial-message {
+  max-width: 460px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
 
 .admin-inline-form {
   padding: 18px;
@@ -4411,4 +4558,17 @@ h1 {
   width: 1rem;
   height: 1rem;
   accent-color: var(--green);
+}
+/* Товч хэлбэртэй холбоос (жишээ: "Дахин илгээх") */
+.form-link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.form-link-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }

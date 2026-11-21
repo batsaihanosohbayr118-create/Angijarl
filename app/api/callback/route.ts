@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { checkRateLimit, rateLimits } from "../../../lib/rateLimit";
 
 const RECIPIENT_EMAIL = "angijraltuv@yahoo.com";
 
 export async function POST(request: Request) {
+  const limited = await checkRateLimit(request, rateLimits.callback);
+  if (limited) return limited;
+
   try {
     const { phone } = await request.json();
 

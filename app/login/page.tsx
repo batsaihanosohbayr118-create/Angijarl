@@ -165,7 +165,7 @@ export default function LoginPage() {
     setSuccess(false);
 
     if (!phone.trim() || !password.trim()) {
-      setError(role === "admin" ? "Админ нэр болон нууц үгээ оруулна уу." : "Утасны дугаар болон нууц үгээ оруулна уу.");
+      setError(role === "admin" ? "Админ нэр болон нууц үгээ оруулна уу." : "Имэйл хаяг болон нууц үгээ оруулна уу.");
       return;
     }
 
@@ -174,7 +174,7 @@ export default function LoginPage() {
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password, role }),
+        body: JSON.stringify({ identifier: phone, password, role }),
       });
       const data = (await response.json()) as {
         message?: string;
@@ -191,7 +191,7 @@ export default function LoginPage() {
         "angijral_session",
         JSON.stringify({ role: data.user.role, name: data.user.name })
       );
-      router.push(data.user.role === "admin" ? "/admin" : "/");
+      router.push("/");
     } catch {
       setError("Сервертэй холбогдоход алдаа гарлаа.");
     } finally {
@@ -251,7 +251,9 @@ export default function LoginPage() {
                 <Script
                   src="https://accounts.google.com/gsi/client"
                   strategy="afterInteractive"
-                  onLoad={() => setGoogleScriptReady(true)}
+                  /* onLoad зөвхөн анх ачаалахад ажилладаг; onReady нь logout-ийн дараа зэрэг
+                     хуудас дахин ачаалалгүй орж ирэх бүрд ажиллана — эс бөгөөс Google товч зурагдахгүй */
+                  onReady={() => setGoogleScriptReady(true)}
                   onError={() => setGoogleError("Google нэвтрэлтийн script ачаалж чадсангүй.")}
                 />
                 <div className="auth-google-area">
@@ -271,21 +273,21 @@ export default function LoginPage() {
 
             <form className="auth-form" onSubmit={handleSubmit}>
               <div className="form-field">
-                <label htmlFor="login-phone">{role === "admin" ? "Админ нэр" : "Утасны дугаар"}</label>
+                <label htmlFor="login-phone">{role === "admin" ? "Админ нэр" : "Имэйл хаяг"}</label>
                 <div className="form-input-wrap">
                   <UserIcon />
                   <input
                     id="login-phone"
-                    type={role === "admin" ? "text" : "tel"}
-                    inputMode={role === "admin" ? "text" : "tel"}
-                    placeholder={role === "admin" ? "Админ нэрээ оруулна уу" : "9127 1178"}
+                    type={role === "admin" ? "text" : "email"}
+                    inputMode={role === "admin" ? "text" : "email"}
+                    placeholder={role === "admin" ? "Админ нэрээ оруулна уу" : "Имэйл хаягаа оруулна уу"}
                     value={phone}
                     onChange={(event) => {
                       setPhone(event.target.value);
                       setError("");
                       setSuccess(false);
                     }}
-                    autoComplete={role === "admin" ? "username" : "tel"}
+                    autoComplete={role === "admin" ? "username" : "email"}
                   />
                 </div>
               </div>

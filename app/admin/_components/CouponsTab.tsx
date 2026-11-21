@@ -2,6 +2,7 @@
 
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import Icon from "./Icon";
+import ConfirmDialog from "./ConfirmDialog";
 import CardNav from "./CardNav";
 import Dropdown from "./Dropdown";
 import DatePicker from "./DatePicker";
@@ -26,6 +27,8 @@ export default function CouponsTab({
   setCoupons: Dispatch<SetStateAction<Coupon[]>>;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
+  /* Устгахаар сонгосон мөр — баталгаажуулах цонх нээгдэнэ */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
   const [couponDraft, setCouponDraft] = useState(emptyCouponDraft);
@@ -239,7 +242,7 @@ export default function CouponsTab({
                           type="button"
                           className="admin-icon-btn danger"
                           aria-label="Устгах"
-                          onClick={() => deleteCoupon(coupon.id)}
+                          onClick={() => setPendingDelete({ id: coupon.id, label: coupon.code })}
                         >
                           <Icon name="trash" />
                         </button>
@@ -255,6 +258,20 @@ export default function CouponsTab({
           )}
         </>
       )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Купон устгах уу?"
+        message={
+          <>
+            <strong>{pendingDelete?.label}</strong> купон бүрмөсөн устгагдана. Энэ үйлдлийг буцаах боломжгүй.
+          </>
+        }
+        onConfirm={() => {
+          if (pendingDelete) void deleteCoupon(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }

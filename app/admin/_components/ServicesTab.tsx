@@ -3,6 +3,7 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import ServicePhoto from "../../components/ServicePhoto";
 import Icon from "./Icon";
+import ConfirmDialog from "./ConfirmDialog";
 import CardNav from "./CardNav";
 import { scrollGridCards } from "../_lib/scroll";
 import type { ServiceItem } from "../_lib/types";
@@ -17,6 +18,8 @@ export default function ServicesTab({
   setServices: Dispatch<SetStateAction<ServiceItem[]>>;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
+  /* Устгахаар сонгосон мөр — баталгаажуулах цонх нээгдэнэ */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [serviceDraft, setServiceDraft] = useState(emptyServiceDraft);
@@ -171,7 +174,7 @@ export default function ServicesTab({
                       type="button"
                       className="admin-icon-btn danger"
                       aria-label="Устгах"
-                      onClick={() => deleteService(s.id)}
+                      onClick={() => setPendingDelete({ id: s.id, label: s.title })}
                     >
                       <Icon name="trash" />
                     </button>
@@ -185,6 +188,20 @@ export default function ServicesTab({
           )}
         </>
       )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Үйлчилгээ устгах уу?"
+        message={
+          <>
+            <strong>{pendingDelete?.label}</strong> үйлчилгээ бүрмөсөн устгагдана. Энэ үйлдлийг буцаах боломжгүй.
+          </>
+        }
+        onConfirm={() => {
+          if (pendingDelete) void deleteService(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }

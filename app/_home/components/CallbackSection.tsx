@@ -22,7 +22,12 @@ export default function CallbackSection() {
         body: JSON.stringify({ phone: callbackPhone.trim() }),
       });
 
-      if (!response.ok) throw new Error("request failed");
+      if (!response.ok) {
+        /* Серверээс ирсэн мессежийг (жишээ нь "Хэт олон хүсэлт...") харуулна */
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        setCallbackError(data?.error ?? "Илгээхэд алдаа гарлаа. Дахин оролдоно уу.");
+        return;
+      }
 
       setCallbackSent(true);
       setCallbackPhone("");

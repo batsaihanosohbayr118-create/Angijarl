@@ -13,6 +13,7 @@ export const navItems: { key: TabKey; label: string; icon: string }[] = [
   { key: "teachers", label: "Бариачид", icon: "users" },
   { key: "services", label: "Үйлчилгээ", icon: "services" },
   { key: "coupons", label: "Купон", icon: "coupons" },
+  { key: "testimonials", label: "Сэтгэгдэл", icon: "testimonials" },
 ];
 
 export default function AdminSidebar({

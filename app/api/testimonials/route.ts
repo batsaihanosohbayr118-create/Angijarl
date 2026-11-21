@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createTestimonial, listTestimonials } from "../../../lib/angijralDb";
+import { checkRateLimit, rateLimits } from "../../../lib/rateLimit";
 
 export async function GET() {
   try {
@@ -11,6 +12,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await checkRateLimit(req, rateLimits.testimonial);
+  if (limited) return limited;
+
   try {
     const body = (await req.json()) as { name?: string; message?: string; rating?: number };
     const result = await createTestimonial(body ?? {});

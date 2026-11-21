@@ -6,7 +6,6 @@ import SiteHeader from "./_home/components/SiteHeader";
 import HeroSection from "./_home/components/HeroSection";
 import WhySection from "./_home/components/WhySection";
 import OfferedServicesSection from "./_home/components/OfferedServicesSection";
-import PartnersSection from "./_home/components/PartnersSection";
 import TeachersSection from "./_home/components/TeachersSection";
 import TestimonialsSection from "./_home/components/TestimonialsSection";
 import FaqSection from "./_home/components/FaqSection";
@@ -69,9 +68,11 @@ export default function Home() {
       <HeroSection />
       <WhySection />
       <OfferedServicesSection services={offeredServices} />
-      <PartnersSection />
       <TeachersSection teachers={teachers} />
-      <TestimonialsSection userTestimonials={userTestimonials} />
+      <TestimonialsSection
+        userTestimonials={userTestimonials}
+        onTestimonialAdded={(testimonial) => setUserTestimonials((current) => [testimonial, ...current])}
+      />
       <FaqSection />
       <CallbackSection />
     </main>

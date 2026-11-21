@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { loginUser, type Role } from "../../../lib/angijralDb";
 import { clearAuthCookie, setAuthCookie } from "../../../lib/auth";
+import { checkRateLimit, rateLimits } from "../../../lib/rateLimit";
 
 export async function POST(request: Request) {
+  const limited = await checkRateLimit(request, rateLimits.login);
+  if (limited) return limited;
+
   try {
-    const body = (await request.json()) as { phone?: string; password?: string; role?: Role };
+    const body = (await request.json()) as { identifier?: string; phone?: string; password?: string; role?: Role };
     const role = body.role === "admin" ? "admin" : "user";
     const result = await loginUser({
-      phone: body.phone ?? "",
+      /* Хэрэглэгч: имэйл, Админ: админ нэр */
+      identifier: body.identifier ?? body.phone ?? "",
       password: body.password ?? "",
       role,
     });

@@ -4,6 +4,7 @@ import { ensureSchema } from "./schema";
 import { teacherPhotoFallback } from "./seed";
 import { createInitials } from "./utils";
 import type { DbTeacher } from "./types";
+import { normalizePhotoUrl } from "../resolveImage";
 
 function rowToTeacher(row: Record<string, unknown>): DbTeacher {
   const serviceIds = row.service_ids;
@@ -48,7 +49,8 @@ export async function createTeacher(input: {
   const role = input.role?.trim() ?? "";
   const years = Number(input.years);
   const bio = input.bio?.trim() ?? "";
-  const photo = input.photo?.trim() ?? "";
+  /* Pinterest гэх мэт хуудасны холбоосыг жинхэнэ зургийн URL болгож хадгална */
+  const photo = await normalizePhotoUrl(input.photo ?? "");
   const serviceIds = Array.isArray(input.serviceIds) ? input.serviceIds.filter((id) => typeof id === "string") : [];
 
   if (!name || !role || !bio) {
@@ -88,7 +90,8 @@ export async function updateTeacher(
   const role = input.role?.trim() ?? "";
   const years = Number(input.years);
   const bio = input.bio?.trim() ?? "";
-  const photo = input.photo?.trim() ?? "";
+  /* Pinterest гэх мэт хуудасны холбоосыг жинхэнэ зургийн URL болгож хадгална */
+  const photo = await normalizePhotoUrl(input.photo ?? "");
   const serviceIds = Array.isArray(input.serviceIds) ? input.serviceIds.filter((id) => typeof id === "string") : [];
 
   if (!name || !role || !bio) {

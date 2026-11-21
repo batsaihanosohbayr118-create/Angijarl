@@ -19,29 +19,40 @@
 
 /* ---------- Banner ---------- */
 .banner {
-  background:
-    linear-gradient(90deg, rgba(9, 43, 89, 0.9), rgba(9, 43, 89, 0.72) 48%, rgba(76, 152, 47, 0.58)),
-    url("https://images.pexels.com/photos/5240642/pexels-photo-5240642.jpeg?auto=compress&cs=tinysrgb&w=1600") center 42% / cover no-repeat;
-  color: #fff;
-  padding: 58px var(--page-gutter) 52px;
+  position: relative;
+  /* зураг 3:1 харьцаатай, доод хэсэгт нь өөрийн цагаан/ногоон долгионтой */
+  aspect-ratio: 3 / 1;
+  max-height: 440px;
+  width: 100%;
+  background: var(--paper) url("/booking/banner.jpg") center bottom / cover no-repeat;
 }
-.banner h1 {
-  font-size: 32px;
-  margin: 8px 0 6px;
-  font-weight: 700;
+.banner::after {
+  /* зургийн доод ирмэгийг хуудасны цагаан руу зөөлөн шилжүүлнэ */
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 22%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--paper));
 }
-.banner p {
-  margin: 0;
-  color: #dfe9e0;
-  font-size: 14.5px;
-  max-width: 520px;
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- Layout ---------- */
 .wrap {
+  position: relative;
   max-width: 1080px;
-  margin: 0 auto;
-  padding: 36px 24px 76px;
+  /* алхам заагчийг баннерын цагаан долгион дээр гаргана */
+  margin: calc(-1 * min(4.5vw, 64px)) auto 0;
+  padding: 0 24px 76px;
 }
 .grid {
   display: grid;
@@ -61,22 +72,41 @@
 
 /* ---------- Stepper ---------- */
 .stepper {
+  --ring: 36px;
+  --progress: 12.5%;
+  container-type: inline-size;
+  position: relative;
+  z-index: 1;
   display: flex;
-  justify-content: space-between;
-  margin: 0 0 34px;
+  max-width: 820px;
+  margin: 0 auto 40px;
   padding: 0;
   list-style: none;
-  position: relative;
 }
+/* саарал зам — хоёр үзүүр нь бүдгэрнэ */
 .stepper::before {
   content: "";
   position: absolute;
-  top: 24px;
-  left: 24px;
-  right: 24px;
+  top: calc(var(--ring) / 2 - 1px);
+  left: 0;
+  right: 0;
   height: 2px;
-  background: var(--sage-line);
-  z-index: 0;
+  background: linear-gradient(90deg, transparent, var(--sage-line) 8%, var(--sage-line) 92%, transparent);
+}
+/* ногоон явц — идэвхтэй алхмаас дараагийн алхам руу бүдгэрнэ */
+.stepper::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--ring) / 2 - 1px);
+  left: 12.5%;
+  width: calc(var(--progress) + 12.5%);
+  height: 2px;
+  background: linear-gradient(90deg, var(--forest) calc(100% - 25cqw), rgba(76, 152, 47, 0) 100%);
+  transition: width 0.45s cubic-bezier(0.22, 0.61, 0.22, 1);
+}
+.stepper[data-complete]::after {
+  width: 75%;
+  background: var(--forest);
 }
 .step {
   position: relative;
@@ -84,62 +114,62 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
   flex: 1;
 }
 .ring {
-  width: 48px;
-  height: 48px;
+  width: var(--ring);
+  height: var(--ring);
   border-radius: 50%;
   background: #fff;
-  border: 2px solid var(--sage-line);
+  border: 1.5px solid var(--sage-line);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(9, 43, 89, 0.06);
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
-.stepDone .ring {
+.stepDone .ring,
+.stepActive .ring {
   border-color: var(--forest);
   background: var(--forest);
   color: #fff;
 }
 .stepActive .ring {
-  border-color: var(--gold);
-  color: var(--forest-dark);
-  box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.18);
+  box-shadow: 0 0 0 5px rgba(76, 152, 47, 0.14), 0 4px 12px rgba(76, 152, 47, 0.28);
 }
 .stepLabel {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--muted);
   text-align: center;
-  max-width: 90px;
 }
-.stepActive .stepLabel,
+.stepActive .stepLabel {
+  color: var(--navy);
+  font-weight: 800;
+}
 .stepDone .stepLabel {
   color: var(--navy);
 }
 @media (max-width: 560px) {
   .stepper {
-    gap: 8px;
+    --ring: 32px;
+    margin-bottom: 28px;
   }
 
   .ring {
-    width: 38px;
-    height: 38px;
     font-size: 13px;
   }
 
-  .stepper::before {
-    top: 19px;
-    left: 18px;
-    right: 18px;
+  .step {
+    gap: 10px;
   }
 
   .stepLabel {
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 
@@ -281,6 +311,12 @@
 }
 
 /* ---------- Calendar ---------- */
+.calRow,
+.days {
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
 .calRow {
   display: flex;
   align-items: center;
@@ -316,7 +352,8 @@
   padding-bottom: 4px;
 }
 .day {
-  aspect-ratio: 1;
+  /* дөрвөлжин биш, нам өндөртэй нүд — хуанли хэт томрохгүй */
+  height: 40px;
   border-radius: 9px;
   border: 1px solid var(--sage-line);
   background: var(--paper);
@@ -352,6 +389,10 @@
 @media (max-width: 520px) {
   .times {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .day {
+    height: 36px;
   }
 }
 .time {

@@ -52,27 +52,72 @@ function LockIcon() {
   );
 }
 
+function KeyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="15" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m11 12 8-8M16 7l2.5 2.5M14 9l2 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  /* 1-р алхам: код авах, 2-р алхам: код + шинэ нууц үг */
+  const [step, setStep] = useState<"request" | "reset">("request");
   const [identifier, setIdentifier] = useState("");
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const resetMessages = () => {
+  const requestCode = async () => {
     setError("");
-    setSuccess(false);
+    setInfo("");
+
+    if (!identifier.trim()) {
+      setError("Утасны дугаар эсвэл имэйл хаягаа оруулна уу.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch("/api/forgot-password/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier }),
+      });
+      const data = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
+        setError(data.message ?? "Код илгээх үед алдаа гарлаа.");
+        return;
+      }
+
+      setInfo(data.message ?? "");
+      setStep("reset");
+    } catch {
+      setError("Сервертэй холбогдоход алдаа гарлаа.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleRequest = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    resetMessages();
+    void requestCode();
+  };
 
-    if (!identifier.trim() || !password.trim() || !confirmPassword.trim()) {
-      setError("Утас эсвэл имэйл, шинэ нууц үгээ бүрэн оруулна уу.");
+  const handleReset = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    if (!/^\d{6}$/.test(code.replace(/\s+/g, ""))) {
+      setError("Имэйлээр ирсэн 6 оронтой кодоо оруулна уу.");
       return;
     }
 
@@ -91,7 +136,7 @@ export default function ForgotPasswordPage() {
       const response = await fetch("/api/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ identifier, code, password }),
       });
       const data = (await response.json()) as { message?: string };
 
@@ -100,7 +145,9 @@ export default function ForgotPasswordPage() {
         return;
       }
 
+      setInfo("");
       setSuccess(true);
+      setCode("");
       setPassword("");
       setConfirmPassword("");
     } catch {
@@ -121,7 +168,7 @@ export default function ForgotPasswordPage() {
             <div className="auth-visual-bottom">
               <h2>Бүртгэлээ сэргээхэд амархан</h2>
               <p>
-                Бүртгэлтэй утасны дугаар эсвэл Google имэйлээ оруулаад шинэ нууц үгээ тохируулна уу.
+                Бүртгэлтэй утасны дугаар эсвэл имэйлээ оруулаад, имэйлээр ирсэн кодоор шинэ нууц үгээ тохируулна уу.
               </p>
             </div>
           </section>
@@ -130,80 +177,142 @@ export default function ForgotPasswordPage() {
             <p className="auth-eyebrow">Нууц үг сэргээх</p>
             <h1>Шинэ нууц үг</h1>
             <p className="auth-subtext">
-              Бүртгэлтэй утасны дугаар эсвэл имэйлээ ашиглан нууц үгээ шинэчилнэ үү.
+              {step === "request"
+                ? "Бүртгэлтэй утасны дугаар эсвэл имэйлээ оруулна уу. Бүртгэлд холбогдсон имэйл рүү 6 оронтой код илгээнэ."
+                : "Имэйлээр ирсэн кодоо оруулаад шинэ нууц үгээ тохируулна уу."}
             </p>
 
-            <form className="auth-form" onSubmit={handleSubmit}>
-              <div className="form-field">
-                <label htmlFor="forgot-identifier">Утас эсвэл имэйл</label>
-                <div className="form-input-wrap">
-                  <UserIcon />
-                  <input
-                    id="forgot-identifier"
-                    type="text"
-                    inputMode="text"
-                    placeholder="9127 1178 эсвэл name@email.com"
-                    value={identifier}
-                    onChange={(event) => {
-                      setIdentifier(event.target.value);
-                      resetMessages();
-                    }}
-                    autoComplete="username"
-                  />
+            {step === "request" ? (
+              <form className="auth-form" onSubmit={handleRequest}>
+                <div className="form-field">
+                  <label htmlFor="forgot-identifier">Утас эсвэл имэйл</label>
+                  <div className="form-input-wrap">
+                    <UserIcon />
+                    <input
+                      id="forgot-identifier"
+                      type="text"
+                      inputMode="text"
+                      placeholder="Утасны дугаар эсвэл имэйл хаягаа оруулна уу"
+                      value={identifier}
+                      onChange={(event) => {
+                        setIdentifier(event.target.value);
+                        setError("");
+                      }}
+                      autoComplete="username"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="form-field">
-                <label htmlFor="forgot-password">Шинэ нууц үг</label>
-                <div className="form-input-wrap">
-                  <LockIcon />
-                  <input
-                    id="forgot-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Хамгийн багадаа 6 тэмдэгт"
-                    value={password}
-                    onChange={(event) => {
-                      setPassword(event.target.value);
-                      resetMessages();
-                    }}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="form-toggle-visibility"
-                    aria-label={showPassword ? "Нууц үг нуух" : "Нууц үг харуулах"}
-                    onClick={() => setShowPassword((value) => !value)}
-                  >
-                    <EyeIcon open={showPassword} />
+                {error && <p className="form-error">{error}</p>}
+
+                <button type="submit" className="auth-submit" disabled={loading}>
+                  {loading ? "Илгээж байна..." : "Код авах"}
+                </button>
+
+                <p className="auth-subtext">
+                  Бүртгэлдээ имэйл холбоогүй бол <a className="form-link" href="tel:+97691271178">9127 1178</a> дугаарт
+                  холбогдож нууц үгээ сэргээлгэнэ үү.
+                </p>
+              </form>
+            ) : (
+              <form className="auth-form" onSubmit={handleReset}>
+                {info && !success && <p className="auth-success">{info}</p>}
+
+                <div className="form-field">
+                  <label htmlFor="forgot-code">Баталгаажуулах код</label>
+                  <div className="form-input-wrap">
+                    <KeyIcon />
+                    <input
+                      id="forgot-code"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="6 оронтой код"
+                      value={code}
+                      onChange={(event) => {
+                        setCode(event.target.value.replace(/\D/g, ""));
+                        setError("");
+                      }}
+                      autoComplete="one-time-code"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="forgot-password">Шинэ нууц үг</label>
+                  <div className="form-input-wrap">
+                    <LockIcon />
+                    <input
+                      id="forgot-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Хамгийн багадаа 6 тэмдэгт"
+                      value={password}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setError("");
+                      }}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      className="form-toggle-visibility"
+                      aria-label={showPassword ? "Нууц үг нуух" : "Нууц үг харуулах"}
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      <EyeIcon open={showPassword} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="forgot-confirm">Шинэ нууц үг давтах</label>
+                  <div className="form-input-wrap">
+                    <LockIcon />
+                    <input
+                      id="forgot-confirm"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Нууц үгээ дахин оруулна уу"
+                      value={confirmPassword}
+                      onChange={(event) => {
+                        setConfirmPassword(event.target.value);
+                        setError("");
+                      }}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+
+                {error && <p className="form-error">{error}</p>}
+                {success && <p className="auth-success">Нууц үг амжилттай шинэчлэгдлээ. Одоо шинэ нууц үгээрээ нэвтэрнэ үү.</p>}
+
+                {!success && (
+                  <button type="submit" className="auth-submit" disabled={loading}>
+                    {loading ? "Шинэчилж байна..." : "Нууц үг шинэчлэх"}
                   </button>
-                </div>
-              </div>
+                )}
 
-              <div className="form-field">
-                <label htmlFor="forgot-confirm">Шинэ нууц үг давтах</label>
-                <div className="form-input-wrap">
-                  <LockIcon />
-                  <input
-                    id="forgot-confirm"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Нууц үгээ дахин оруулна уу"
-                    value={confirmPassword}
-                    onChange={(event) => {
-                      setConfirmPassword(event.target.value);
-                      resetMessages();
-                    }}
-                    autoComplete="new-password"
-                  />
-                </div>
-              </div>
-
-              {error && <p className="form-error">{error}</p>}
-              {success && <p className="auth-success">Нууц үг амжилттай шинэчлэгдлээ. Одоо шинэ нууц үгээрээ нэвтэрнэ үү.</p>}
-
-              <button type="submit" className="auth-submit" disabled={loading}>
-                {loading ? "Шинэчилж байна..." : "Нууц үг шинэчлэх"}
-              </button>
-            </form>
+                {!success && (
+                  <p className="auth-switch">
+                    Код ирээгүй юу?{" "}
+                    <button type="button" className="form-link form-link-button" disabled={loading} onClick={() => void requestCode()}>
+                      Дахин илгээх
+                    </button>
+                    {" · "}
+                    <button
+                      type="button"
+                      className="form-link form-link-button"
+                      onClick={() => {
+                        setStep("request");
+                        setError("");
+                        setInfo("");
+                      }}
+                    >
+                      Утас/имэйл солих
+                    </button>
+                  </p>
+                )}
+              </form>
+            )}
 
             <p className="auth-switch">
               Нууц үгээ санасан уу? <Link className="form-link" href="/login">Нэвтрэх</Link>

@@ -3,7 +3,7 @@ const footerNavItems = [
   ["Бидний тухай", "/about"],
   ["Үйлчилгээ", "/#services"],
   ["Бариачид", "/teachers"],
-  ["Сэтгэгдэл", "/feedback"],
+  ["Сэтгэгдэл", "/#feedback"],
   ["Цаг захиалах", "/booking"],
 ] as const;
 

@@ -1,5 +1,3 @@
-import type { Testimonial } from "./types";
-
 export const navItems = ["Нүүр", "Бидний тухай", "Үйлчилгээ", "Бариачид", "Цаг захиалах"];
 
 export const serviceLinks = [
@@ -23,33 +21,6 @@ export const stats = [
   ["10+", "Жилийн туршлага"],
   ["95%", "Сэтгэл ханамжтай"],
   ["6", "Үйлчилгээ"]
-];
-
-export const defaultTestimonials: Testimonial[] = [
-  {
-    id: "default-batsaihan",
-    message:
-      "АНГИЖРАЛ төвийн үйлчилгээ маш чанартай, мэргэжлийн түвшинд байсан. Хэдхэн удаагийн эмчилгээнээс хойш нурууны өвдөлт мэдэгдэхүйц багассан.",
-    name: "Э. Батсайхан",
-    initials: "ЭБ",
-    rating: 5,
-  },
-  {
-    id: "default-sarnai",
-    message:
-      "Бариачид маш тэвчээртэй бөгөөд эмчилгээ бүрийн өмнө юу хийхээ тодорхой тайлбарладаг байсан. Орчин цэвэрхэн, тав тухтай.",
-    name: "Б. Сарнай",
-    initials: "БС",
-    rating: 5,
-  },
-  {
-    id: "default-purevdorj",
-    message:
-      "Удаан хугацаанд зовж байсан хүзүүний өвдөлт минь энд үйлчлүүлснээр арилсан. Мэргэжилтнүүддээ маш их баярлалаа.",
-    name: "Д. Пүрэвдорж",
-    initials: "ДП",
-    rating: 5,
-  },
 ];
 
 export const faqs = [
@@ -94,17 +65,6 @@ export const faqs = [
     "БЗД, Сайд нарын 2-р эмнэлгийн баруун урд, 25-р байр, 306 тоотод байрладаг."
   ]
 ] as const;
-export const partners = [
-  "AIRMARKET",
-  "AND GLOBAL",
-  "ГАЗАР ШИМ",
-  "GOLOMT CAPITAL",
-  "GRAPECITY",
-  "ЖУР УР",
-  "MAJOR SUPPLY",
-  "MSM"
-];
-
 export const navHref = (item: string, index: number) => {
   if (item === "Бидний тухай") return "/about";
   if (item === "Бариачид") return "/teachers";

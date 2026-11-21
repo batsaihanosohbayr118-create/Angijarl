@@ -26,6 +26,13 @@ export default function Icon({ name }: { name: string }) {
           <path d="M7.5 13.2h2.4M7.5 16.5h5.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
         </svg>
       );
+    case "testimonials":
+      return (
+        <svg {...common}>
+          <path d="M4.5 6.5A2.5 2.5 0 0 1 7 4h10a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 17 16h-6.5L6 20v-4H7a2.5 2.5 0 0 1-2.5-2.5v-7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M8.5 9h7M8.5 12h4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
     case "services":
       return (
         <svg {...common}>

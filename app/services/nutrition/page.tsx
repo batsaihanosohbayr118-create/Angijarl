@@ -269,7 +269,22 @@ export default function NutritionPage() {
           )}
         </nav>
 
-        {session ? (
+        {session?.role === "user" ? (
+          <div className="profile-chip profile-chip--user">
+            <span className="profile-identity" title={session.name} aria-label={session.name}>
+              <span className="profile-avatar" aria-hidden="true">
+                {session.name.trim().charAt(0).toUpperCase() || "Х"}
+              </span>
+            </span>
+            <button type="button" className="login-button logout-button" onClick={handleLogout}>
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                <path d="M10 16l-4-4 4-4M6 12h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Гарах
+            </button>
+          </div>
+        ) : session ? (
           <div className="profile-chip" ref={profileRef}>
             <button
               type="button"

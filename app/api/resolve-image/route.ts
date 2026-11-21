@@ -1,20 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-/* Pinterest гэх мэт хуудаснаас зураг хайх нь ~1 сек болдог тул амжилттай үр дүнг санах ойд хадгална */
-const resolvedCache = new Map<string, string>();
-const MAX_CACHE_ENTRIES = 500;
-
-function resolved(source: string, imageUrl: string) {
-  if (resolvedCache.size >= MAX_CACHE_ENTRIES) {
-    const oldest = resolvedCache.keys().next().value;
-    if (oldest !== undefined) resolvedCache.delete(oldest);
-  }
-  resolvedCache.set(source, imageUrl);
-  return NextResponse.json(
-    { imageUrl },
-    { headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800" } }
-  );
-}
+import { resolveImageUrl } from "../../../lib/resolveImage";
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
@@ -22,60 +7,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "url шаардлагатай" }, { status: 400 });
   }
 
-  let target: URL;
-  try {
-    target = new URL(url);
-  } catch {
-    return NextResponse.json({ error: "URL буруу байна" }, { status: 400 });
+  const imageUrl = await resolveImageUrl(url);
+  if (!imageUrl) {
+    return NextResponse.json({ error: "Зураг олдсонгүй" }, { status: 422 });
   }
 
-  if (target.protocol !== "https:" && target.protocol !== "http:") {
-    return NextResponse.json({ error: "URL буруу байна" }, { status: 400 });
-  }
-
-  const cached = resolvedCache.get(target.toString());
-  if (cached) {
-    return resolved(target.toString(), cached);
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 6000);
-
-  try {
-    const response = await fetch(target.toString(), {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; AngijralBot/1.0; +https://angijral.mn)",
-        Accept: "text/html,image/*",
-      },
-      redirect: "follow",
-      signal: controller.signal,
-    });
-
-    const contentType = response.headers.get("content-type") ?? "";
-
-    if (contentType.startsWith("image/")) {
-      return resolved(target.toString(), target.toString());
-    }
-
-    if (!contentType.includes("text/html")) {
-      return NextResponse.json({ error: "Зураг олдсонгүй" }, { status: 422 });
-    }
-
-    const html = await response.text();
-    const match =
-      html.match(/<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i) ??
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i) ??
-      html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
-
-    if (!match) {
-      return NextResponse.json({ error: "Зураг олдсонгүй" }, { status: 422 });
-    }
-
-    const imageUrl = new URL(match[1], target).toString();
-    return resolved(target.toString(), imageUrl);
-  } catch {
-    return NextResponse.json({ error: "Холбогдоход алдаа гарлаа" }, { status: 502 });
-  } finally {
-    clearTimeout(timeout);
-  }
+  return NextResponse.json(
+    { imageUrl },
+    { headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800" } }
+  );
 }

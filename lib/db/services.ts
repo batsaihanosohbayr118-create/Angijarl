@@ -3,6 +3,7 @@ import { sql } from "./client";
 import { ensureSchema } from "./schema";
 import { defaultServicePhoto } from "./seed";
 import type { DbService } from "./types";
+import { normalizePhotoUrl } from "../resolveImage";
 
 function rowToService(row: Record<string, unknown>): DbService {
   return {
@@ -34,7 +35,8 @@ export async function createService(input: { title?: string; description?: strin
 
   const title = input.title?.trim() ?? "";
   const description = input.description?.trim() ?? "";
-  const photo = input.photo?.trim() || defaultServicePhoto;
+  /* Pinterest гэх мэт хуудасны холбоосыг жинхэнэ зургийн URL болгож хадгална */
+  const photo = (await normalizePhotoUrl(input.photo ?? "")) || defaultServicePhoto;
 
   if (!title) {
     return { ok: false as const, message: "Үйлчилгээний гарчгийг бөглөнө үү." };
@@ -61,7 +63,8 @@ export async function updateService(id: string, input: { title?: string; descrip
 
   const title = input.title?.trim() ?? "";
   const description = input.description?.trim() ?? "";
-  const photo = input.photo?.trim() || defaultServicePhoto;
+  /* Pinterest гэх мэт хуудасны холбоосыг жинхэнэ зургийн URL болгож хадгална */
+  const photo = (await normalizePhotoUrl(input.photo ?? "")) || defaultServicePhoto;
 
   if (!title) {
     return { ok: false as const, message: "Үйлчилгээний гарчгийг бөглөнө үү." };

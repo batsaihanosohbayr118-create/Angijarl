@@ -9,13 +9,14 @@ import BookingsTab from "./_components/BookingsTab";
 import TeachersTab from "./_components/TeachersTab";
 import ServicesTab from "./_components/ServicesTab";
 import CouponsTab from "./_components/CouponsTab";
+import TestimonialsTab from "./_components/TestimonialsTab";
 import {
   getAdminSessionSnapshot,
   parseAdminSession,
   pendingSessionSnapshot,
   subscribeToAdminSession,
 } from "./_lib/session";
-import type { AppUser, Booking, Coupon, ServiceItem, TabKey, Teacher } from "./_lib/types";
+import type { AdminTestimonial, AppUser, Booking, Coupon, ServiceItem, TabKey, Teacher } from "./_lib/types";
 
 /** Сервер 401 буцаавал (cookie байхгүй/хугацаа дууссан) локал session-ийг цэвэрлэж login руу шилжүүлнэ. */
 function expireSessionOnUnauthorized(response: Response) {
@@ -55,6 +56,7 @@ export default function AdminPage() {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [testimonials, setTestimonials] = useState<AdminTestimonial[]>([]);
 
   /* auth guard */
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function AdminPage() {
     void fetchList<Teacher>("/api/admin/teachers", "teachers").then(setTeachers);
     void fetchList<ServiceItem>("/api/admin/services", "services").then(setServices);
     void fetchList<Coupon>("/api/admin/coupons", "coupons").then(setCoupons);
+    void fetchList<AdminTestimonial>("/api/admin/testimonials", "testimonials").then(setTestimonials);
   }, [isAdmin]);
 
   const handleLogout = () => {
@@ -119,6 +122,7 @@ export default function AdminPage() {
         {tab === "teachers" && <TeachersTab teachers={teachers} setTeachers={setTeachers} services={services} />}
         {tab === "services" && <ServicesTab services={services} setServices={setServices} />}
         {tab === "coupons" && <CouponsTab coupons={coupons} setCoupons={setCoupons} />}
+        {tab === "testimonials" && <TestimonialsTab testimonials={testimonials} setTestimonials={setTestimonials} />}
       </div>
     </main>
   );

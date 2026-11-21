@@ -3,6 +3,7 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import TeacherPhoto from "../../components/TeacherPhoto";
 import Icon from "./Icon";
+import ConfirmDialog from "./ConfirmDialog";
 import CardNav from "./CardNav";
 import { scrollGridCards } from "../_lib/scroll";
 import type { ServiceItem, Teacher } from "../_lib/types";
@@ -26,6 +27,8 @@ export default function TeachersTab({
   services: ServiceItem[];
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
+  /* Устгахаар сонгосон мөр — баталгаажуулах цонх нээгдэнэ */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
   const [showTeacherForm, setShowTeacherForm] = useState(false);
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
   const [teacherDraft, setTeacherDraft] = useState(emptyTeacherDraft);
@@ -265,7 +268,7 @@ export default function TeachersTab({
                       type="button"
                       className="admin-icon-btn danger"
                       aria-label="Устгах"
-                      onClick={() => deleteTeacher(teacher.id)}
+                      onClick={() => setPendingDelete({ id: teacher.id, label: teacher.name })}
                     >
                       <Icon name="trash" />
                     </button>
@@ -279,6 +282,20 @@ export default function TeachersTab({
           )}
         </>
       )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Бариач устгах уу?"
+        message={
+          <>
+            <strong>{pendingDelete?.label}</strong> бариачийн мэдээлэл бүрмөсөн устгагдана. Энэ үйлдлийг буцаах боломжгүй.
+          </>
+        }
+        onConfirm={() => {
+          if (pendingDelete) void deleteTeacher(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }

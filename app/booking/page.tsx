@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import styles from "./booking.module.css";
+import { servicePriceCatalog } from "../../lib/servicePrices";
+import TeacherPhoto from "../components/TeacherPhoto";
 
 const navItems = ["Нүүр", "Бидний тухай", "Үйлчилгээ", "Бариачид", "Цаг захиалах"];
 
@@ -64,12 +66,10 @@ type SessionState = { role: "user" | "admin"; name: string } | null;
 
 let cachedSessionSnapshot: SessionState = null;
 
-const services = [
-  { id: "office-massage", title: "Оффис бариа засал", price: "60,000₮", priceAmount: 60000 },
-  { id: "nutrition", title: "Хоол зүйн сургалт", price: "40,000₮", priceAmount: 40000 },
-  { id: "meditation", title: "Байгууллагын бясалгал", price: "50,000₮", priceAmount: 50000 },
-  { id: "psychology", title: "Сэтгэл зүйн сургалт", price: "45,000₮", priceAmount: 45000 },
-];
+const services = servicePriceCatalog.map((item) => ({
+  ...item,
+  price: `${item.priceAmount.toLocaleString("en-US")}₮`,
+}));
 
 const getSessionSnapshot = (): SessionState => {
   if (typeof window === "undefined") return null;
@@ -597,7 +597,22 @@ export default function BookingPage() {
           )}
         </nav>
 
-        {session ? (
+        {session?.role === "user" ? (
+          <div className="profile-chip profile-chip--user">
+            <span className="profile-identity" title={session.name} aria-label={session.name}>
+              <span className="profile-avatar" aria-hidden="true">
+                {session.name.trim().charAt(0).toUpperCase() || "Х"}
+              </span>
+            </span>
+            <button type="button" className="login-button logout-button" onClick={handleLogout}>
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                <path d="M10 16l-4-4 4-4M6 12h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Гарах
+            </button>
+          </div>
+        ) : session ? (
           <div className="profile-chip" ref={profileRef}>
             <button
               type="button"
@@ -646,11 +661,15 @@ export default function BookingPage() {
       </header>
 
       <div className={styles.banner}>
-        <p>Үйлчилгээ, бариачаа сонгоод, өөрт тохиромжтой цагаа захиалаарай.</p>
+        <h1 className={styles.srOnly}>Цаг захиалах</h1>
       </div>
 
       <div className={styles.wrap}>
-        <ol className={styles.stepper}>
+        <ol
+          className={styles.stepper}
+          style={{ "--progress": `${Math.min(step, 4) * 25 - 12.5}%` } as React.CSSProperties}
+          data-complete={step >= 4 || undefined}
+        >
           {[
             { n: 1, label: "Үйлчилгээ" },
             { n: 2, label: "Бариач" },
@@ -711,11 +730,15 @@ export default function BookingPage() {
                         className={`${styles.spec} ${specialist?.id === s.id ? styles.selected : ""}`}
                         onClick={() => setSpecialist(s)}
                       >
-                        {s.photo ? (
-                          <Image className={styles.avatar} src={s.photo} alt={s.name} width={80} height={80} />
-                        ) : (
-                          <span className={styles.avatar}>{s.initials}</span>
-                        )}
+                        {/* TeacherPhoto нь Pinterest зэрэг хуудасны холбоосоос жинхэнэ зургийг олж харуулна */}
+                        <TeacherPhoto
+                          className={styles.avatar}
+                          photo={s.photo}
+                          alt={s.name}
+                          initials={s.initials}
+                          width={116}
+                          height={116}
+                        />
                         <span className={styles.specName}>{s.name}</span>
                         <span className={styles.specRole}>
                           {s.role} · {s.years} жил
@@ -803,11 +826,11 @@ export default function BookingPage() {
                 <div className={styles.twoCol}>
                   <label className={styles.field}>
                     <span>Овог, нэр</span>
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Жишээ: Осгоо Батбаяр" />
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Овог нэрээ оруулна уу" />
                   </label>
                   <label className={styles.field}>
                     <span>Утасны дугаар</span>
-                    <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9911-XXXX" />
+                    <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Дугаар оруулна уу" />
                   </label>
                 </div>
                 <label className={styles.field}>

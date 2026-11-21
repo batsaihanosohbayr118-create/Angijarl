@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import Icon from "./Icon";
+import ConfirmDialog from "./ConfirmDialog";
 import CardNav from "./CardNav";
 import Dropdown from "./Dropdown";
 import DatePicker from "./DatePicker";
@@ -32,6 +33,8 @@ export default function BookingsTab({
   teachers: Teacher[];
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
+  /* Устгахаар сонгосон мөр — баталгаажуулах цонх нээгдэнэ */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
   const [bookingFilter, setBookingFilter] = useState<"Бүгд" | BookingStatus>("Бүгд");
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [bookingDraft, setBookingDraft] = useState(emptyBookingDraft);
@@ -265,7 +268,7 @@ export default function BookingsTab({
                           type="button"
                           className="admin-icon-btn danger"
                           aria-label="Устгах"
-                          onClick={() => deleteBooking(b.id)}
+                          onClick={() => setPendingDelete({ id: b.id, label: `${b.name} (${b.preferredDate} ${b.time})` })}
                         >
                           <Icon name="trash" />
                         </button>
@@ -281,6 +284,20 @@ export default function BookingsTab({
           )}
         </>
       )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Захиалга устгах уу?"
+        message={
+          <>
+            <strong>{pendingDelete?.label}</strong>-ийн цаг захиалга бүрмөсөн устгагдана. Энэ үйлдлийг буцаах боломжгүй.
+          </>
+        }
+        onConfirm={() => {
+          if (pendingDelete) void deleteBooking(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }
