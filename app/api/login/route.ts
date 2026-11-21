@@ -22,7 +22,15 @@ export async function POST(request: Request) {
     }
 
     return setAuthCookie(NextResponse.json({ user: result.user }), result.user);
-  } catch {
+  } catch (error) {
+    console.error("Login error:", error);
+    /* Hosting дээр AUTH_SECRET тохируулаагүй бол шалтгааныг тодорхой хэлнэ */
+    if (error instanceof Error && error.message.includes("AUTH_SECRET")) {
+      return NextResponse.json(
+        { message: "Серверийн тохиргоо дутуу байна (AUTH_SECRET). Сайтын админд хандана уу." },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ message: "Нэвтрэх үед алдаа гарлаа." }, { status: 500 });
   }
 }
